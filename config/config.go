@@ -15,21 +15,34 @@ const (
 )
 
 type Config struct {
-	AppConfig   AppConfig
-	LogConfig   log.Config
-	MongoConfig MongoConfig
+	App     AppConfig
+	Log     log.Config
+	Mongo   MongoConfig
+	AzBlob  AzBlobConfig
+	Storage StorageConfig
 }
 
 type AppConfig struct {
 	Version         string
 	Environment     string
 	Port            string
+	Host            string
 	ShutdownTimeout int
 }
 
 type MongoConfig struct {
 	URI      string
 	Database string
+}
+
+type AzBlobConfig struct {
+	Host        string
+	AccountName string
+	AccountKey  string
+}
+
+type StorageConfig struct {
+	Container string
 }
 
 func Load() (*Config, error) {
@@ -41,57 +54,90 @@ func Load() (*Config, error) {
 	parseAppConfig(cfg)
 	parseLogConfig(cfg)
 	parseMongoConfig(cfg)
+	parseAzBlobConfig(cfg)
+	parseStorageConfig(cfg)
 	validation(cfg)
 
 	return cfg, nil
 }
 
 func parseLogConfig(cfg *Config) {
-	cfg.LogConfig.Mode = os.Getenv("LOG_MODE")
-	cfg.LogConfig.Level = os.Getenv("LOG_LEVEL")
+	cfg.Log.Mode = os.Getenv("LOG_MODE")
+	cfg.Log.Level = os.Getenv("LOG_LEVEL")
 }
 
 func parseAppConfig(cfg *Config) {
-	cfg.AppConfig.Version = os.Getenv("VERSION")
-	cfg.AppConfig.Environment = os.Getenv("ENVIRONMENT")
-	cfg.AppConfig.Port = os.Getenv("PORT")
+	cfg.App.Version = os.Getenv("VERSION")
+	cfg.App.Environment = os.Getenv("ENVIRONMENT")
+	cfg.App.Port = os.Getenv("PORT")
+	cfg.App.Host = os.Getenv("HOST")
 	shutdownTimeout, _ := strconv.Atoi(os.Getenv("SHUTDOWN_TIMEOUT"))
-	cfg.AppConfig.ShutdownTimeout = shutdownTimeout
+	cfg.App.ShutdownTimeout = shutdownTimeout
 }
 
 func parseMongoConfig(cfg *Config) {
-	cfg.MongoConfig.URI = os.Getenv("MONGO_URI")
-	cfg.MongoConfig.Database = os.Getenv("MONGO_DATABASE")
+	cfg.Mongo.URI = os.Getenv("MONGO_URI")
+	cfg.Mongo.Database = os.Getenv("MONGO_DATABASE")
+}
+
+func parseAzBlobConfig(cfg *Config) {
+	cfg.AzBlob.Host = os.Getenv("AZBLOB_HOST")
+	cfg.AzBlob.AccountName = os.Getenv("AZBLOB_ACCOUNT_NAME")
+	cfg.AzBlob.AccountKey = os.Getenv("AZBLOB_ACCOUNT_KEY")
+}
+
+func parseStorageConfig(cfg *Config) {
+	cfg.Storage.Container = os.Getenv("STORAGE_CONTAINER")
 }
 
 func validation(cfg *Config) error {
-	if cfg.AppConfig.Version == "" {
+	if cfg.App.Version == "" {
 		return fmt.Errorf("version is required")
 	}
 
-	if cfg.AppConfig.Environment == "" {
+	if cfg.App.Environment == "" {
 		return fmt.Errorf("environment is required")
 	}
-	switch cfg.AppConfig.Environment {
+	switch cfg.App.Environment {
 	case APP_ENVIRONMENT_LOCAL, APP_ENVIRONMENT_PROD:
 	default:
 		return fmt.Errorf("environment is invalid")
 	}
 
-	if cfg.AppConfig.Port == "" {
+	if cfg.App.Port == "" {
 		return fmt.Errorf("port is required")
 	}
 
-	if cfg.AppConfig.ShutdownTimeout < 0 {
+	if cfg.App.Host == "" {
+		return fmt.Errorf("host is required")
+	}
+
+	if cfg.App.ShutdownTimeout < 0 {
 		return fmt.Errorf("shutdownTimeout is invalid")
 	}
 
-	if cfg.MongoConfig.URI == "" {
+	if cfg.Mongo.URI == "" {
 		return fmt.Errorf("mongo URI is required")
 	}
 
-	if cfg.MongoConfig.Database == "" {
+	if cfg.Mongo.Database == "" {
 		return fmt.Errorf("mongo database is required")
+	}
+
+	if cfg.AzBlob.Host == "" {
+		return fmt.Errorf("azblob host is required")
+	}
+
+	if cfg.AzBlob.AccountName == "" {
+		return fmt.Errorf("azblob account name is required")
+	}
+
+	if cfg.AzBlob.AccountKey == "" {
+		return fmt.Errorf("azblob account key is required")
+	}
+
+	if cfg.Storage.Container == "" {
+		return fmt.Errorf("storage container is required")
 	}
 
 	return nil

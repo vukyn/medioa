@@ -2,15 +2,19 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"medioa/config"
 	"medioa/models"
 	"medioa/pkg/log"
 	"net/http"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	_ "medioa/docs"
 )
 
 type Server struct {
@@ -19,13 +23,19 @@ type Server struct {
 }
 
 func New(ctx context.Context, cfg *config.Config) *Server {
-	mongoClient, err := initMongo(ctx, cfg)
+	mongoCli, err := initMongo(ctx, cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	blobContainerCli, err := initBlobContainer(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}
 
 	lib := &models.Lib{
-		Mongo: mongoClient,
+		Mongo:         mongoCli,
+		BlobContainer: blobContainerCli,
 	}
 	return &Server{
 		cfg: cfg,
@@ -36,8 +46,8 @@ func New(ctx context.Context, cfg *config.Config) *Server {
 func (s *Server) Start(ctx context.Context) {
 	log := log.New("server", "Start")
 
-	port := s.cfg.AppConfig.Port
-	appEnv := s.cfg.AppConfig.Environment
+	port := s.cfg.App.Port
+	appEnv := s.cfg.App.Environment
 
 	if appEnv == config.APP_ENVIRONMENT_PROD {
 		gin.SetMode(gin.ReleaseMode)
@@ -45,13 +55,12 @@ func (s *Server) Start(ctx context.Context) {
 	}
 
 	r := initGin()
+	s.initSwagger(r)
+
+	// api v1
 	v1 := r.Group("/api/v1")
 	s.initHealthCheck(v1)
 	s.initHandler(v1)
-
-	if appEnv == config.APP_ENVIRONMENT_LOCAL {
-		// s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-	}
 
 	log.Info("started api successfully with port: %v", port)
 	http.ListenAndServe(port, r)
@@ -77,23 +86,12 @@ func initGin() *gin.Engine {
 	return r
 }
 
-func (s *Server) initHealthCheck(group *gin.RouterGroup) {
-	pingHandler := func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, map[string]any{
-			"version":   s.cfg.AppConfig.Version,
-			"client_ip": ctx.ClientIP(),
-		})
-	}
-
-	group.GET("/health-check", pingHandler)
-}
-
 func initMongo(ctx context.Context, cfg *config.Config) (*mongo.Client, error) {
 	log := log.New("server", "initMongo")
 
 	// Use the SetServerAPIOptions() method to set the version of the Stable API on the client
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI(cfg.MongoConfig.URI).SetServerAPIOptions(serverAPI)
+	opts := options.Client().ApplyURI(cfg.Mongo.URI).SetServerAPIOptions(serverAPI)
 
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
@@ -107,6 +105,29 @@ func initMongo(ctx context.Context, cfg *config.Config) (*mongo.Client, error) {
 		return nil, err
 	}
 	log.Info("connected to mongo successfully")
+
+	return client, nil
+}
+
+func initBlobContainer(_ context.Context, cfg *config.Config) (*container.Client, error) {
+	log := log.New("server", "initBlobContainer")
+	host := cfg.AzBlob.Host
+	accountKey := cfg.AzBlob.AccountKey
+	accountName := cfg.AzBlob.AccountName
+	containerName := cfg.Storage.Container
+
+	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
+	if err != nil {
+		log.Error("azblob.NewSharedKeyCredential", err)
+		return nil, err
+	}
+
+	containerURL := fmt.Sprintf("%s/%s", host, containerName)
+	client, err := container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
+	if err != nil {
+		log.Error("container.NewClientWithSharedKeyCredential", err)
+		return nil, err
+	}
 
 	return client, nil
 }

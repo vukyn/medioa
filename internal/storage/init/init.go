@@ -19,8 +19,8 @@ type Init struct {
 func NewInit(lib *commonModel.Lib, cfg *config.Config) *Init {
 	// repository := repository.InitRepo(lib)
 	repository := repository.InitMongo(cfg, lib)
-	service := service.InitService(lib, repository)
-	usecase := usecase.InitUsecase(service)
+	service := service.InitService(cfg, lib, repository)
+	usecase := usecase.InitUsecase(cfg, service)
 	handler := handler.InitHandler(cfg, lib, usecase)
 	return &Init{
 		Repository: repository,

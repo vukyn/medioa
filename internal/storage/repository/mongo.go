@@ -24,7 +24,7 @@ func InitMongo(cfg *config.Config, lib *commonModel.Lib) IRepository {
 }
 
 func (m *mongo) withCollection() *mongoo.Collection {
-	return m.lib.Mongo.Database(m.cfg.MongoConfig.Database).Collection(m.tableName)
+	return m.lib.Mongo.Database(m.cfg.Mongo.Database).Collection(m.tableName)
 }
 
 func (m *mongo) GetById(ctx context.Context, id int64) (*entity.Storage, error) {

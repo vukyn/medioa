@@ -2,6 +2,7 @@ package handler
 
 import (
 	"medioa/config"
+	"medioa/constants"
 
 	"medioa/internal/storage/models"
 	"medioa/internal/storage/usecase"
@@ -27,7 +28,7 @@ func InitHandler(cfg *config.Config, lib *commonModel.Lib, usecase usecase.IUsec
 }
 
 func (h Handler) MapRoutes(group *gin.RouterGroup) {
-	group.POST("/upload", h.UploadMedia)
+	group.POST(constants.STORAGE_ENDPOINT_UPLOAD, h.UploadMedia)
 }
 
 // UploadMedia godoc
@@ -39,7 +40,7 @@ func (h Handler) MapRoutes(group *gin.RouterGroup) {
 //	@Accept			mpfd
 //	@Produce		json
 //	@Param			chunk	formData	file	true	"binary file"
-//	@Success		201		{object}	models.Response
+//	@Success		201		{object}	models.UploadResponse
 //	@Router			/storage/upload [post]
 func (h Handler) UploadMedia(ctx *gin.Context) {
 	log := log.New("handler", "UploadMedia")
@@ -50,13 +51,10 @@ func (h Handler) UploadMedia(ctx *gin.Context) {
 		http.BadRequest(ctx, err)
 		return
 	}
-	req := models.UploadRequest{
-		File: file,
-	}
 
 	userId := int64(1)
-	res, err := h.usecase.Create(ctx, userId, &models.SaveRequest{
-		DownloadUrl: req.File.Filename,
+	res, err := h.usecase.Upload(ctx, userId, &models.UploadRequest{
+		File: file,
 	})
 	if err != nil {
 		http.Internal(ctx, err)

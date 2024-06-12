@@ -7,16 +7,18 @@ import (
 	"medioa/internal/storage/models"
 	"time"
 
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 type Storage struct {
 	Id          int64     `gorm:"primarykey;column:id"`
+	UUID        uuid.UUID `gorm:"column:uuid"`
 	DownloadUrl string    `gorm:"column:download_url"`
 	Type        string    `gorm:"column:type"`
 	Token       string    `gorm:"column:token;default:(-)"`
 	LifeTime    int       `gorm:"column:life_time;default:(-)"`
-	CreatedBy   int       `gorm:"column:created_by"`
+	CreatedBy   int64     `gorm:"column:created_by"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 }
 
@@ -47,6 +49,7 @@ func (e *Storage) ExportList(objs []*Storage) []*models.Response {
 func (e *Storage) ParseFromSaveRequest(req *models.SaveRequest) {
 	if req != nil {
 		e.Id = req.Id
+		e.UUID = req.UUID
 		e.DownloadUrl = req.DownloadUrl
 		e.Type = req.Type
 		e.Token = req.Token
@@ -58,6 +61,8 @@ func (e *Storage) ParseFromSaveRequest(req *models.SaveRequest) {
 
 func (e *Storage) ParseForCreate(req *models.SaveRequest, userId int64) {
 	e.ParseFromSaveRequest(req)
+	e.CreatedBy = userId
+	e.CreatedAt = time.Now()
 }
 
 func (e *Storage) ParseForCreateMany(reqs []*models.SaveRequest, userId int64) []*Storage {
@@ -86,12 +91,13 @@ func (e *Storage) ParseForUpdateMany(reqs []*models.SaveRequest, userId int64) [
 
 func (e *Storage) ToBson() bson.D {
 	return bson.D{
-		{Key: "_id", Value: e.Id},
+		{Key: "id", Value: e.Id},
+		{Key: "_id", Value: e.UUID.String()},
 		{Key: "download_url", Value: e.DownloadUrl},
 		{Key: "type", Value: e.Type},
 		{Key: "token", Value: e.Token},
 		{Key: "life_time", Value: e.LifeTime},
 		{Key: "created_by", Value: e.CreatedBy},
-		{Key: "created_at", Value: e.CreatedAt},
+		{Key: "created_at", Value: e.CreatedAt.UnixMilli()},
 	}
 }

@@ -6,9 +6,10 @@ package models
 import (
 	"medioa/constants"
 	commonModel "medioa/models"
-	"mime/multipart"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type RequestParams struct {
@@ -54,25 +55,22 @@ type Response struct {
 	Type        string    `json:"type"`
 	Token       string    `json:"token"`
 	LifeTime    int       `json:"life_time"`
-	CreatedBy   int       `json:"created_by"`
+	CreatedBy   int64     `json:"created_by"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
 type SaveRequest struct {
 	Id          int64
+	UUID        uuid.UUID
 	DownloadUrl string
 	Type        string
 	Token       string
 	LifeTime    int
-	CreatedBy   int
+	CreatedBy   int64
 	CreatedAt   time.Time
 }
 
 type ListPaging struct {
 	commonModel.ListPaging
 	Records []*Response
-}
-
-type UploadRequest struct {
-	File *multipart.FileHeader
 }

@@ -6,5 +6,5 @@ import (
 )
 
 type IUsecase interface {
-	Create(ctx context.Context, userId int64, params *models.SaveRequest) (*models.Response, error)
+	Upload(ctx context.Context, userId int64, params *models.UploadRequest) (*models.UploadResponse, error)
 }

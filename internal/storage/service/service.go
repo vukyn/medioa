@@ -7,6 +7,7 @@ package service
 
 import (
 	"context"
+	"medioa/config"
 	"medioa/constants"
 	"medioa/internal/storage/entity"
 	"medioa/internal/storage/models"
@@ -17,12 +18,14 @@ import (
 )
 
 type service struct {
+	cfg  *config.Config
 	lib  *commonModel.Lib
 	repo repo.IRepository
 }
 
-func InitService(lib *commonModel.Lib, repo repo.IRepository) IService {
+func InitService(cfg *config.Config, lib *commonModel.Lib, repo repo.IRepository) IService {
 	return &service{
+		cfg:  cfg,
 		lib:  lib,
 		repo: repo,
 	}
