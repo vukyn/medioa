@@ -7,14 +7,16 @@ import (
 	"medioa/config"
 	"medioa/models"
 	"medioa/pkg/log"
+	"medioa/pkg/network"
 	"net/http"
+
+	_ "medioa/docs"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	_ "medioa/docs"
 )
 
 type Server struct {
@@ -55,6 +57,7 @@ func (s *Server) Start(ctx context.Context) {
 	}
 
 	r := initGin()
+	s.initCORS(r)
 	s.initSwagger(r)
 
 	// api v1
@@ -101,7 +104,8 @@ func initMongo(ctx context.Context, cfg *config.Config) (*mongo.Client, error) {
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		log.Error("client.Ping", err)
+		ip, _ := network.GetPublicIP()
+		log.Error(fmt.Sprintf("[%s], client.Ping", ip), err)
 		return nil, err
 	}
 	log.Info("connected to mongo successfully")

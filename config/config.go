@@ -20,6 +20,7 @@ type Config struct {
 	Mongo   MongoConfig
 	AzBlob  AzBlobConfig
 	Storage StorageConfig
+	Cors    CorsConfig
 }
 
 type AppConfig struct {
@@ -28,6 +29,12 @@ type AppConfig struct {
 	Port            string
 	Host            string
 	ShutdownTimeout int
+}
+
+type CorsConfig struct {
+	AllowOrigins []string
+	AllowHeaders []string
+	AllowMethods []string
 }
 
 type MongoConfig struct {

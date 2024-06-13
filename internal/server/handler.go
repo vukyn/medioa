@@ -1,13 +1,14 @@
 package server
 
 import (
+	"medioa/config"
 	initStorage "medioa/internal/storage/init"
 	"net/http"
-	"medioa/config"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func (s *Server) initHandler(group *gin.RouterGroup) {
@@ -33,4 +34,27 @@ func (s *Server) initSwagger(r *gin.Engine) {
 	if appEnv == config.APP_ENVIRONMENT_LOCAL {
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	}
+}
+
+func (s *Server) initCORS(r *gin.Engine) {
+	corsConfig := cors.DefaultConfig()
+
+	if len(s.cfg.Cors.AllowOrigins) > 0 {
+		corsConfig.AllowOrigins = s.cfg.Cors.AllowOrigins
+	} else {
+		corsConfig.AllowAllOrigins = true
+	}
+
+	if len(s.cfg.Cors.AllowHeaders) > 0 {
+		corsConfig.AllowHeaders = s.cfg.Cors.AllowHeaders
+	} else {
+		corsConfig.AllowHeaders = []string{"*"}
+	}
+	if len(s.cfg.Cors.AllowMethods) > 0 {
+		corsConfig.AllowMethods = s.cfg.Cors.AllowMethods
+	} else {
+		corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE"}
+	}
+
+	r.Use(cors.New(corsConfig))
 }
