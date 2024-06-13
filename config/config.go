@@ -5,6 +5,7 @@ import (
 	"medioa/pkg/log"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -95,6 +96,12 @@ func parseAzBlobConfig(cfg *Config) {
 
 func parseStorageConfig(cfg *Config) {
 	cfg.Storage.Container = os.Getenv("STORAGE_CONTAINER")
+}
+
+func parseCorsConfig(cfg *Config) {
+	cfg.Cors.AllowOrigins = strings.Split(os.Getenv("CORS_ALLOW_ORIGINS"), ",")
+	cfg.Cors.AllowHeaders = strings.Split(os.Getenv("CORS_ALLOW_HEADERS"), ",")
+	cfg.Cors.AllowMethods = strings.Split(os.Getenv("CORS_ALLOW_METHODS"), ",")
 }
 
 func validation(cfg *Config) error {

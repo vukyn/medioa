@@ -10,4 +10,5 @@ type Lib struct {
 	Db            *gorm.DB
 	Mongo         *mongo.Client
 	BlobContainer *container.Client
+	SocketConn    *SocketConn
 }

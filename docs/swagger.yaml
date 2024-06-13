@@ -2,7 +2,11 @@ basePath: /api/v1
 definitions:
   medioa_internal_storage_models.UploadResponse:
     properties:
+      ext:
+        type: string
       file_name:
+        type: string
+      token:
         type: string
       url:
         type: string
@@ -22,6 +26,10 @@ paths:
       - multipart/form-data
       description: Upload media file (images, videos, etc.)
       parameters:
+      - description: session id
+        in: query
+        name: sid
+        type: string
       - description: binary file
         in: formData
         name: chunk

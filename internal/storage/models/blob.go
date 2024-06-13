@@ -3,7 +3,8 @@ package models
 import "mime/multipart"
 
 type UploadRequest struct {
-	File *multipart.FileHeader `json:"file"`
+	SessionId string                `json:"sid"`
+	File      *multipart.FileHeader `json:"file"`
 }
 
 type UploadResponse struct {

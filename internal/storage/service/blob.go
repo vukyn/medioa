@@ -34,6 +34,13 @@ func (s *service) Upload(ctx context.Context, req *models.UploadRequest) (*model
 	reqProgress := streaming.NewRequestProgress(reader, func(bytesTransferred int64) {
 		percent := float64(bytesTransferred) / float64(totalBytes) * 100
 		log.Info("Wrote %d of %d bytes (%.2f%%)\n", bytesTransferred, totalBytes, percent)
+		socketConn := s.lib.SocketConn.Get(req.SessionId)
+		if socketConn != nil {
+			socketConn.Emit("upload_progress", map[string]any{
+				"token": token,
+				"percent": percent,
+			})
+		}
 	})
 
 	opts := &blockblob.UploadStreamOptions{

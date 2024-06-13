@@ -39,6 +39,12 @@ const docTemplate = `{
                 "summary": "Upload media",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "session id",
+                        "name": "sid",
+                        "in": "query"
+                    },
+                    {
                         "type": "file",
                         "description": "binary file",
                         "name": "chunk",
@@ -61,7 +67,13 @@ const docTemplate = `{
         "medioa_internal_storage_models.UploadResponse": {
             "type": "object",
             "properties": {
+                "ext": {
+                    "type": "string"
+                },
                 "file_name": {
+                    "type": "string"
+                },
+                "token": {
                     "type": "string"
                 },
                 "url": {

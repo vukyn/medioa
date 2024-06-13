@@ -8,20 +8,22 @@ import (
 	"medioa/models"
 	"medioa/pkg/log"
 	"medioa/pkg/network"
-	"net/http"
 
 	_ "medioa/docs"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/gin-gonic/gin"
+	socketio "github.com/googollee/go-socket.io"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Server struct {
-	lib *models.Lib
-	cfg *config.Config
+	lib    *models.Lib
+	cfg    *config.Config
+	router *gin.Engine
+	socket *socketio.Server
 }
 
 func New(ctx context.Context, cfg *config.Config) *Server {
@@ -35,38 +37,58 @@ func New(ctx context.Context, cfg *config.Config) *Server {
 		panic(err)
 	}
 
+	if cfg.App.Environment == config.APP_ENVIRONMENT_PROD {
+		gin.SetMode(gin.ReleaseMode)
+		gin.DefaultWriter = io.Discard
+	}
+
+	router := initGin()
+	socket := initSocket()
+
 	lib := &models.Lib{
 		Mongo:         mongoCli,
 		BlobContainer: blobContainerCli,
+		SocketConn:    models.NewSocketConn(),
 	}
+
 	return &Server{
-		cfg: cfg,
-		lib: lib,
+		cfg:    cfg,
+		lib:    lib,
+		router: router,
+		socket: socket,
 	}
 }
 
 func (s *Server) Start(ctx context.Context) {
 	log := log.New("server", "Start")
 
-	port := s.cfg.App.Port
-	appEnv := s.cfg.App.Environment
-
-	if appEnv == config.APP_ENVIRONMENT_PROD {
-		gin.SetMode(gin.ReleaseMode)
-		gin.DefaultWriter = io.Discard
-	}
-
-	r := initGin()
-	s.initCORS(r)
-	s.initSwagger(r)
+	r := s.router
+	s.initCORS()
+	s.initSwagger()
+	s.initStaticFiles()
 
 	// api v1
 	v1 := r.Group("/api/v1")
 	s.initHealthCheck(v1)
 	s.initHandler(v1)
 
+	// socket
+	s.initSocket()
+
+	port := s.cfg.App.Port
 	log.Info("started api successfully with port: %v", port)
-	http.ListenAndServe(port, r)
+
+	go func() {
+		if err := s.router.Run(port); err != nil {
+			log.Fatal("router.Run error: %s\n", err)
+		}
+	}()
+
+	go func() {
+		if err := s.socket.Serve(); err != nil {
+			log.Fatal("socket.Serve error: %s\n", err)
+		}
+	}()
 }
 
 func (s *Server) Stop(ctx context.Context) {
@@ -75,6 +97,10 @@ func (s *Server) Stop(ctx context.Context) {
 	log.Info("stopping api")
 	if err := s.lib.Mongo.Disconnect(ctx); err != nil {
 		log.Error("failed to disconnect mongo", err)
+	}
+
+	if err := s.socket.Close(); err != nil {
+		log.Error("failed to close socket", err)
 	}
 }
 
@@ -87,6 +113,10 @@ func initGin() *gin.Engine {
 		log.Debug("endpoint %v %v %v", httpMethod, absolutePath, handlerName)
 	}
 	return r
+}
+
+func initSocket() *socketio.Server {
+	return socketio.NewServer(nil)
 }
 
 func initMongo(ctx context.Context, cfg *config.Config) (*mongo.Client, error) {
