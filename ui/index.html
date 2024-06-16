@@ -3,85 +3,226 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>File Upload with Progress</title>
+		<title>Medioa - File Upload</title>
+
+		<!-- jQuery -->
+		<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+		<!-- jQuery -->
+
+		<!-- Bootstrap -->
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+		<!-- Bootstrap -->
+
+		<!-- Toaster Notification -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.10.0/toastify.min.css" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.10.0/toastify.min.js"></script>
+		<!-- Toaster Notification -->
+
+		<style>
+			body {
+				background-color: #f8f9fa;
+			}
+			.upload-container {
+				background-color: #fff;
+				padding: 30px;
+				border-radius: 10px;
+				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+				max-width: 600px;
+				margin: 50px auto;
+			}
+			.progress {
+				height: 30px;
+				border-radius: 5px;
+				overflow: hidden;
+			}
+			.progress-bar {
+				font-weight: bold;
+			}
+			.file-input {
+				border: 2px dashed #ced4da;
+				padding: 20px;
+				border-radius: 5px;
+				text-align: center;
+			}
+			.file-input input[type="file"] {
+				display: none;
+			}
+			.file-input label {
+				display: block;
+				cursor: pointer;
+				color: #007bff;
+			}
+		</style>
 	</head>
 	<body>
-		<input type="file" id="fileInput" />
-		<button id="uploadButton" onclick="uploadFile()" disabled>Upload</button>
-		<progress id="progressBar" value="0" max="100"></progress>
-
+		<div class="container upload-container">
+			<h2 class="text-center">Upload a File</h2>
+			<form id="uploadForm">
+				<div class="form-group file-input">
+					<input type="file" id="fileInput" name="file" multiple="false" />
+					<label for="fileInput">Click to choose a file</label>
+				</div>
+				<button type="submit" id="uploadButton" class="btn btn-primary btn-block" disabled>Upload</button>
+				<button type="button" id="resetButton" class="btn btn-secondary btn-block mt-2" disabled>Reset</button>
+			</form>
+			<div class="progress mt-4">
+				<div id="progressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%">0%</div>
+			</div>
+		</div>
 		<script>
-			let socket;
-			let socketId;
+			$(document).ready(function () {
+				// Connect to WebSocket server
+				var socketId;
+				var socket;
 
-			function connectWebSocket() {
-				socket = new WebSocket("ws://localhost:5001/ws");
+				function connectWebSocket() {
+					// Establish WebSocket connection
+					socket = new WebSocket("ws://localhost:5001/ws");
 
-				socket.onopen = function () {
-					console.log("WebSocket connection established");
-					document.getElementById("uploadButton").disabled = false;
-				};
+					socket.onopen = function () {
+						showNotificationWS("WebSocket connected");
+                        $("#progressBar").css("width", "0%");
+						$("#uploadButton").prop("disabled", false);
+						$("#resetButton").prop("disabled", false);
+					};
 
-				socket.onmessage = function (event) {
-					// Assuming the first message from the server is the socket ID
-					if (!socketId) {
-						socketId = event.data;
-						console.log("Received socket ID:", socketId);
+					socket.onmessage = function (event) {
+						// Assuming the first message from the server is the socket ID
+						if (!socketId) {
+							socketId = event.data;
+							console.log("Received socket Id:", socketId);
+							return;
+						}
+						percentValue = parseFloat(event.data);
+						if (percentValue >= 100) {
+							percentValue = 100;
+						}
+						$("#progressBar").css("width", percentValue + "%");
+						$("#progressBar").text(Math.floor(percentValue) + "%");
+					};
+
+					socket.onclose = function (event) {
+						showErrorWS("WebSocket disconnected, reconnecting...");
+						// Attempt to reconnect after a short delay
+						setTimeout(function () {
+							connectWebSocket();
+						}, 3000); // 3 seconds delay before reconnecting
+						$("#uploadButton").prop("disabled", true);
+						$("#resetButton").prop("disabled", true);
+					};
+
+					// socket.onerror = function (error) {
+					// 	showError("WebSocket error:", error);
+					// };
+				}
+
+				connectWebSocket(); // Initial WebSocket connection
+
+				$("#fileInput").change(function () {
+					if (this.files.length > 1) {
+						showNotification("Please select only one file.");
+						this.value = ""; // Clear the input
+						$('label[for="fileInput"]').text("Click to choose a file");
 						return;
 					}
 
-					percentValue = parseFloat(event.data);
-					document.getElementById("progressBar").innerText = `${Math.floor(percentValue)}%`;
-
-					const progressBar = document.getElementById("progressBar");
-					progressBar.value = percentValue;
-				};
-
-				socket.onclose = function (event) {
-					console.log("WebSocket connection closed:", event.reason);
-				};
-
-				socket.onerror = function (error) {
-					console.error("WebSocket error:", error);
-				};
-			}
-
-			function uploadFile() {
-				const fileInput = document.getElementById("fileInput");
-				const file = fileInput.files[0];
-
-				if (!file) {
-					alert("Please select a file first");
-					return;
-				}
-
-				const formData = new FormData();
-				formData.append("chunk", file);
-
-				const xhr = new XMLHttpRequest();
-				if (socket === undefined || socketId === "") {
-					xhr.open("POST", "/api/v1/storage/upload", true);
-				} else {
-					xhr.open("POST", "/api/v1/storage/upload?id=" + socketId, true);
-				}
-				xhr.send(formData);
-
-				xhr.onerror = function () {
-					alert("Upload failed due to a network error");
-				};
-
-				xhr.onload = function () {
-					if (xhr.status == 200) {
-						alert("Upload complete");
-					} else {
-						alert("Upload failed");
+					var fileName;
+					if (navigator.platform.indexOf("Win") !== -1) {
+						// Windows
+						fileName = $(this).val().split("\\").pop();
+					} else if (navigator.platform.indexOf("Mac") !== -1) {
+						// Mac
+						fileName = $(this).val().split("/").pop();
 					}
-				};
-			}
+					if (fileName) {
+						$('label[for="fileInput"]').text(fileName);
+					} else {
+						$('label[for="fileInput"]').text("Click to choose a file");
+					}
+				});
 
-			window.onload = function () {
-				connectWebSocket();
-			};
+				$("#uploadForm").on("submit", function (event) {
+					event.preventDefault();
+
+					var formData = new FormData();
+					var fileInput = $("#fileInput")[0];
+					if (fileInput.files.length === 0) {
+						showNotification("Please select a file.");
+						return;
+					}
+					formData.append("chunk", fileInput.files[0]);
+					var endpoint;
+					if (socket === undefined || socketId === "") {
+						endpoint = "/api/v1/storage/upload";
+					} else {
+						endpoint = "/api/v1/storage/upload?id=" + socketId;
+					}
+
+					$.ajax({
+						url: endpoint,
+						type: "POST",
+						data: formData,
+						contentType: false,
+						processData: false,
+						success: function (response) {
+							showSuccess("File uploaded successfully.");
+							$("#resetButton").trigger("click");
+						},
+						error: function () {
+							showError("An error occurred while uploading the file.");
+						},
+					});
+				});
+
+				$("#resetButton").click(function () {
+					$("#uploadForm")[0].reset();
+					$('label[for="fileInput"]').text("Click to choose a file");
+					$("#progressBar").css("width", "0%");
+					$("#progressBar").text("0%");
+				});
+
+				function showNotification(message) {
+					Toastify({
+						text: message,
+						duration: 3000,
+						close: true,
+					}).showToast();
+				}
+				function showNotificationWS(message) {
+					Toastify({
+						position: "center",
+						text: message,
+						duration: 1500,
+						close: false,
+					}).showToast();
+				}
+				function showErrorWS(message) {
+					Toastify({
+						position: "center",
+						text: message,
+						duration: 1500,
+						close: false,
+						backgroundColor: "red",
+					}).showToast();
+				}
+				function showError(message) {
+					Toastify({
+						text: message,
+						duration: 3000,
+						close: true,
+						backgroundColor: "red",
+					}).showToast();
+				}
+				function showSuccess(message) {
+					Toastify({
+						text: message,
+						duration: 3000,
+						close: true,
+						backgroundColor: "green",
+					}).showToast();
+				}
+			});
 		</script>
 	</body>
 </html>
