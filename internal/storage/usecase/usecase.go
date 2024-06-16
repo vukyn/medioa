@@ -9,6 +9,7 @@ import (
 	storageSv "medioa/internal/storage/service"
 	"medioa/pkg/log"
 	"mime/multipart"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/zRedShift/mimemagic"
@@ -35,7 +36,7 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *models.Uploa
 		return nil, err
 	}
 
-	res, err := u.storageSv.UploadBlob(ctx, params.ToBlobRequest())
+	file, err := u.storageSv.UploadBlob(ctx, params.ToBlobRequest())
 	if err != nil {
 		log.Error("service.storageSv.UploadBlob", err)
 		return nil, err
@@ -43,13 +44,14 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *models.Uploa
 
 	// Save to database
 	_id := uuid.New().String()
-	downloadUrl := fmt.Sprintf("%s%s/%s?token=%s", u.cfg.App.Host, constants.STORAGE_ENDPOINT_DOWNLOAD, _id, res.Token)
+	fileName := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD, ":file_name", _id)
+	downloadUrl := fmt.Sprintf("%s/api/v1%s?token=%s", u.cfg.App.Host, fileName, file.Token)
 	if _, err := u.storageSv.Create(ctx, userId, &models.SaveRequest{
 		UUID:        _id,
 		Type:        mimeType,
-		Token:       res.Token,
+		Token:       file.Token,
 		DownloadUrl: downloadUrl,
-		Ext:         res.Ext,
+		Ext:         file.Ext,
 	}); err != nil {
 		log.Error("service.storageSv.Create", err)
 		return nil, err
@@ -58,8 +60,8 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *models.Uploa
 	return &models.UploadResponse{
 		Url:      downloadUrl,
 		FileName: _id,
-		Token:    res.Token,
-		Ext:      res.Ext,
+		Token:    file.Token,
+		Ext:      file.Ext,
 	}, nil
 }
 

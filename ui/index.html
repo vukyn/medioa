@@ -69,6 +69,9 @@
 			<div class="progress mt-4">
 				<div id="progressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%">0%</div>
 			</div>
+			<div id="downloadLinkContainer" class="mt-3" style="display: none">
+				<a id="downloadLink" href="#" class="btn btn-info" target="_blank">Download File</a>
+			</div>
 		</div>
 		<script>
 			var socket;
@@ -173,6 +176,12 @@
 					processData: false,
 					success: function (response) {
 						showSuccess("File uploaded successfully.");
+
+						// Assuming 'response.fileUrl' contains the URL to download the file
+						console.log("File URL:", response.data.url);
+						$("#downloadLink").attr("href", response.data.url);
+						$("#downloadLinkContainer").show();
+
 						$("#resetButton").trigger("click");
 					},
 					error: function () {
