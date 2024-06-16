@@ -8,10 +8,9 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/olahol/melody"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-
-	socketio "github.com/googollee/go-socket.io"
 )
 
 func (s *Server) initHandler(group *gin.RouterGroup) {
@@ -44,29 +43,35 @@ func (s *Server) initStaticFiles() {
 
 func (s *Server) initSocket() {
 	log := log.New("server", "initSocket")
+	socket := s.socket
+	router := s.router
 
-	s.router.GET("/socket.io/*any", gin.WrapH(s.socket))
-	s.router.POST("/socket.io/*any", gin.WrapH(s.socket))
-
-	s.socket.OnConnect("/", func(conn socketio.Conn) error {
-		conn.SetContext("")
-		log.Info("connected: %s", conn.ID())
-		s.lib.SocketConn.Set(conn.ID(), conn)
-		return nil
+	router.GET("/ws", func(c *gin.Context) {
+		socket.HandleRequest(c.Writer, c.Request)
 	})
 
-	s.socket.OnError("/", func(s socketio.Conn, e error) {
+	socket.HandleConnect(func(sess *melody.Session) {
+		id := sess.Request.RemoteAddr
+		sess.Set("id", id)
+		log.Info("connected: %s", id)
+		s.lib.SocketConn.Set(id, sess)
+		sess.Write([]byte(id)) // Send the socket ID to the client
+	})
+
+	socket.HandleError(func(sess *melody.Session, e error) {
 		log.Error("error:", e)
 	})
 
-	s.socket.OnDisconnect("/", func(conn socketio.Conn, reason string) {
-		log.Info("closed: %s", reason)
-		s.lib.SocketConn.Delete(conn.ID())
+	socket.HandleDisconnect(func(sess *melody.Session) {
+		id := sess.Keys["id"].(string)
+		log.Info("closed: %s", id)
+		s.lib.SocketConn.Delete(id)
 	})
 
 }
 
 func (s *Server) initCORS() {
+	router := s.router
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowCredentials = true
 
@@ -88,5 +93,5 @@ func (s *Server) initCORS() {
 		corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE"}
 	}
 
-	s.router.Use(cors.New(corsConfig))
+	router.Use(cors.New(corsConfig))
 }

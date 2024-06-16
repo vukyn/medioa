@@ -39,14 +39,14 @@ func (h Handler) MapRoutes(group *gin.RouterGroup) {
 //	@Tags			Storage
 //	@Accept			mpfd
 //	@Produce		json
-//	@Param			sid		query		string	false	"session id"
+//	@Param			id		query		string	false	"session id"
 //	@Param			chunk	formData	file	true	"binary file"
 //	@Success		201		{object}	models.UploadResponse
 //	@Router			/storage/upload [post]
 func (h Handler) UploadMedia(ctx *gin.Context) {
 	log := log.New("handler", "UploadMedia")
 
-	sid := ctx.Query("sid")
+	id := ctx.Query("id")
 	file, err := ctx.FormFile("chunk")
 	if err != nil {
 		log.Error("Failed to get file from request", err)
@@ -56,7 +56,7 @@ func (h Handler) UploadMedia(ctx *gin.Context) {
 
 	userId := int64(1)
 	res, err := h.usecase.Upload(ctx, userId, &models.UploadRequest{
-		SessionId: sid,
+		SessionId: id,
 		File:      file,
 	})
 	if err != nil {

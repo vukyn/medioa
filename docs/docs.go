@@ -41,7 +41,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "session id",
-                        "name": "sid",
+                        "name": "id",
                         "in": "query"
                     },
                     {

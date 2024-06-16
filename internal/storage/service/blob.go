@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"medioa/internal/storage/models"
 	"medioa/pkg/log"
 	"path"
@@ -32,14 +33,11 @@ func (s *service) Upload(ctx context.Context, req *models.UploadRequest) (*model
 	// create a request progress object to track the progress of the upload
 	totalBytes := req.File.Size
 	reqProgress := streaming.NewRequestProgress(reader, func(bytesTransferred int64) {
-		percent := float64(bytesTransferred) / float64(totalBytes) * 100
-		log.Info("Wrote %d of %d bytes (%.2f%%)\n", bytesTransferred, totalBytes, percent)
-		socketConn := s.lib.SocketConn.Get(req.SessionId)
-		if socketConn != nil {
-			socketConn.Emit("upload_progress", map[string]any{
-				"token": token,
-				"percent": percent,
-			})
+		percentage := float64(bytesTransferred) / float64(totalBytes) * 100
+		log.Info("Wrote %d of %d bytes (%.2f%%)\n", bytesTransferred, totalBytes, percentage)
+		ws := s.lib.SocketConn.Get(req.SessionId)
+		if ws != nil {
+			ws.Write([]byte(fmt.Sprintf("%f", percentage)))
 		}
 	})
 

@@ -14,7 +14,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/gin-gonic/gin"
-	socketio "github.com/googollee/go-socket.io"
+	"github.com/olahol/melody"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -23,7 +23,7 @@ type Server struct {
 	lib    *models.Lib
 	cfg    *config.Config
 	router *gin.Engine
-	socket *socketio.Server
+	socket *melody.Melody
 }
 
 func New(ctx context.Context, cfg *config.Config) *Server {
@@ -83,12 +83,6 @@ func (s *Server) Start(ctx context.Context) {
 			log.Fatal("router.Run error: %s\n", err)
 		}
 	}()
-
-	go func() {
-		if err := s.socket.Serve(); err != nil {
-			log.Fatal("socket.Serve error: %s\n", err)
-		}
-	}()
 }
 
 func (s *Server) Stop(ctx context.Context) {
@@ -115,8 +109,8 @@ func initGin() *gin.Engine {
 	return r
 }
 
-func initSocket() *socketio.Server {
-	return socketio.NewServer(nil)
+func initSocket() *melody.Melody {
+	return melody.New()
 }
 
 func initMongo(ctx context.Context, cfg *config.Config) (*mongo.Client, error) {

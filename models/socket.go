@@ -3,40 +3,40 @@ package models
 import (
 	"sync"
 
-	socketio "github.com/googollee/go-socket.io"
+	"github.com/olahol/melody"
 )
 
 type SocketConn struct {
 	sync.RWMutex
-	Conns map[string]socketio.Conn
+	conns map[string]*melody.Session
 }
 
 func NewSocketConn() *SocketConn {
 	return &SocketConn{
-		Conns: make(map[string]socketio.Conn),
+		conns: make(map[string]*melody.Session),
 	}
 }
 
-func (s *SocketConn) Get(id string) socketio.Conn {
+func (s *SocketConn) Get(id string) *melody.Session {
 	s.RLock()
 	defer s.RUnlock()
-	return s.Conns[id]
+	return s.conns[id]
 }
 
 func (s *SocketConn) Delete(id string) {
 	s.Lock()
 	defer s.Unlock()
-	delete(s.Conns, id)
+	delete(s.conns, id)
 }
 
-func (s *SocketConn) GetAll() map[string]socketio.Conn {
+func (s *SocketConn) GetAll() map[string]*melody.Session {
 	s.RLock()
 	defer s.RUnlock()
-	return s.Conns
+	return s.conns
 }
 
-func (s *SocketConn) Set(id string, conn socketio.Conn) {
+func (s *SocketConn) Set(id string, conn *melody.Session) {
 	s.Lock()
 	defer s.Unlock()
-	s.Conns[id] = conn
+	s.conns[id] = conn
 }
