@@ -6,5 +6,6 @@ import (
 
 type IHandler interface {
 	MapRoutes(group *gin.RouterGroup)
-	UploadMedia(ctx *gin.Context)
+	Upload(ctx *gin.Context)
+	Download(ctx *gin.Context)
 }

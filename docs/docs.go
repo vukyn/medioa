@@ -19,6 +19,50 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/storage/download/{file_name}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Download media file",
+                "consumes": [
+                    "aplication/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Storage"
+                ],
+                "summary": "Download media",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "file name",
+                        "name": "file_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/medioa_internal_storage_models.DownloadResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/storage/upload": {
             "post": {
                 "security": [
@@ -64,6 +108,14 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "medioa_internal_storage_models.DownloadResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "medioa_internal_storage_models.UploadResponse": {
             "type": "object",
             "properties": {
@@ -71,6 +123,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "file_name": {
+                    "description": "review to remove later",
                     "type": "string"
                 },
                 "token": {

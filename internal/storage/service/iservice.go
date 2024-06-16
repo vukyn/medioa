@@ -18,5 +18,6 @@ type IService interface {
 	Upsert(ctx context.Context, userId int64, params *models.SaveRequest) (*models.Response, error)
 
 	// Blob
-	Upload(ctx context.Context, req *models.UploadRequest) (*models.UploadResponse, error)
+	UploadBlob(ctx context.Context, req *models.UploadBlobRequest) (*models.UploadBlobResponse, error)
+	DownloadSAS(ctx context.Context, req *models.DownloadSASRequest) (*models.DownloadSASResponse, error)
 }

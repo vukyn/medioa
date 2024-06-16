@@ -6,16 +6,19 @@ import (
 	"medioa/internal/storage/models"
 	"medioa/pkg/log"
 	"path"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 	"github.com/vukyn/kuery/crypto"
 )
 
 // Upload to Blob Storage with process (handle concurrent with large file)
 // https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/storage/azblob/blockblob/examples_test.go
-func (s *service) Upload(ctx context.Context, req *models.UploadRequest) (*models.UploadResponse, error) {
-	log := log.New("service", "Upload")
+func (s *service) UploadBlob(ctx context.Context, req *models.UploadBlobRequest) (*models.UploadBlobResponse, error) {
+	log := log.New("service", "UploadBlob")
 
 	// open file
 	reader, err := req.File.Open()
@@ -28,7 +31,7 @@ func (s *service) Upload(ctx context.Context, req *models.UploadRequest) (*model
 	// init new block blob connection
 	token := crypto.HashedToken()
 	blobName := token + path.Ext(req.File.Filename)
-	blobClient := s.lib.BlobContainer.NewBlockBlobClient(blobName)
+	blobClient := s.lib.Blob.Container.NewBlockBlobClient(blobName)
 
 	// create a request progress object to track the progress of the upload
 	totalBytes := req.File.Size
@@ -49,10 +52,40 @@ func (s *service) Upload(ctx context.Context, req *models.UploadRequest) (*model
 		return nil, err
 	}
 
-	return &models.UploadResponse{
+	return &models.UploadBlobResponse{
 		Token:    token,
 		FileName: blobName,
 		Ext:      path.Ext(req.File.Filename),
 		Url:      path.Join(s.cfg.AzBlob.Host, s.cfg.Storage.Container, blobName),
+	}, nil
+}
+
+// Download from Blob Storage with SAS (Shared Access Signature)
+// https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/storage/azblob/sas/examples_test.go
+func (s *service) DownloadSAS(ctx context.Context, req *models.DownloadSASRequest) (*models.DownloadSASResponse, error) {
+	log := log.New("service", "DownloadSAS")
+	host := s.cfg.AzBlob.Host
+	containerName := s.cfg.Storage.Container
+
+	blobURL := fmt.Sprintf("%s/%s/%s", host, containerName, req.FileName)
+	blobCli, err := blob.NewClientWithSharedKeyCredential(blobURL, s.lib.Blob.Credential, nil)
+	if err != nil {
+		log.Error("blockblob.NewClientWithSharedKeyCredential", err)
+		return nil, err
+	}
+
+	now := time.Now().Add(-10 * time.Second)
+	expiry := now.Add(15 * time.Minute)
+	permissions := sas.BlobPermissions{Read: true}
+
+	sasURL, err := blobCli.GetSASURL(permissions, expiry, nil)
+	if err != nil {
+		log.Error("blobCli.GetSASURL", err)
+		return nil, err
+	}
+	fmt.Println(sasURL)
+
+	return &models.DownloadSASResponse{
+		Url: sasURL,
 	}, nil
 }

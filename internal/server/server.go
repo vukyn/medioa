@@ -13,6 +13,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/gin-gonic/gin"
 	"github.com/olahol/melody"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -32,7 +33,7 @@ func New(ctx context.Context, cfg *config.Config) *Server {
 		panic(err)
 	}
 
-	blobContainerCli, err := initBlobContainer(ctx, cfg)
+	blobCli, err := initBlob(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -46,9 +47,9 @@ func New(ctx context.Context, cfg *config.Config) *Server {
 	socket := initSocket()
 
 	lib := &models.Lib{
-		Mongo:         mongoCli,
-		BlobContainer: blobContainerCli,
-		SocketConn:    models.NewSocketConn(),
+		Mongo:      mongoCli,
+		Blob:       blobCli,
+		SocketConn: models.NewSocketConn(),
 	}
 
 	return &Server{
@@ -137,12 +138,13 @@ func initMongo(ctx context.Context, cfg *config.Config) (*mongo.Client, error) {
 	return client, nil
 }
 
-func initBlobContainer(_ context.Context, cfg *config.Config) (*container.Client, error) {
-	log := log.New("server", "initBlobContainer")
+func initBlob(_ context.Context, cfg *config.Config) (*models.Blob, error) {
+	log := log.New("server", "initBlob")
 	host := cfg.AzBlob.Host
 	accountKey := cfg.AzBlob.AccountKey
 	accountName := cfg.AzBlob.AccountName
 	containerName := cfg.Storage.Container
+	containerURL := fmt.Sprintf("%s/%s", host, containerName)
 
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
@@ -150,12 +152,17 @@ func initBlobContainer(_ context.Context, cfg *config.Config) (*container.Client
 		return nil, err
 	}
 
-	containerURL := fmt.Sprintf("%s/%s", host, containerName)
-	client, err := container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
+	container, err := container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
 	if err != nil {
 		log.Error("container.NewClientWithSharedKeyCredential", err)
 		return nil, err
 	}
 
-	return client, nil
+	service, err := service.NewClientWithSharedKeyCredential(host, credential, nil)
+
+	return &models.Blob{
+		Container:  container,
+		Credential: credential,
+		Service:    service,
+	}, nil
 }

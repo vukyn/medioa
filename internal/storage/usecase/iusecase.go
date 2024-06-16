@@ -7,4 +7,5 @@ import (
 
 type IUsecase interface {
 	Upload(ctx context.Context, userId int64, params *models.UploadRequest) (*models.UploadResponse, error)
+	Download(ctx context.Context, userId int64, params *models.DownloadRequest) (*models.DownloadResponse, error)
 }

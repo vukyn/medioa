@@ -19,6 +19,7 @@ type Config struct {
 	App     AppConfig
 	Log     log.Config
 	Mongo   MongoConfig
+	AzAd    AzAdConfig
 	AzBlob  AzBlobConfig
 	Storage StorageConfig
 	Cors    CorsConfig
@@ -49,6 +50,12 @@ type AzBlobConfig struct {
 	AccountKey  string
 }
 
+type AzAdConfig struct {
+	TenantId     string
+	ClientId     string
+	ClientSecret string
+}
+
 type StorageConfig struct {
 	Container string
 }
@@ -64,6 +71,8 @@ func Load() (*Config, error) {
 	parseMongoConfig(cfg)
 	parseAzBlobConfig(cfg)
 	parseStorageConfig(cfg)
+	parseCorsConfig(cfg)
+	parseAzAdConfig(cfg)
 	validation(cfg)
 
 	return cfg, nil
@@ -102,6 +111,12 @@ func parseCorsConfig(cfg *Config) {
 	cfg.Cors.AllowOrigins = strings.Split(os.Getenv("CORS_ALLOW_ORIGINS"), ",")
 	cfg.Cors.AllowHeaders = strings.Split(os.Getenv("CORS_ALLOW_HEADERS"), ",")
 	cfg.Cors.AllowMethods = strings.Split(os.Getenv("CORS_ALLOW_METHODS"), ",")
+}
+
+func parseAzAdConfig(cfg *Config) {
+	cfg.AzAd.TenantId = os.Getenv("AZAD_TENANT_ID")
+	cfg.AzAd.ClientId = os.Getenv("AZAD_CLIENT_ID")
+	cfg.AzAd.ClientSecret = os.Getenv("AZAD_CLIENT_SECRET")
 }
 
 func validation(cfg *Config) error {
@@ -153,6 +168,30 @@ func validation(cfg *Config) error {
 	if cfg.Storage.Container == "" {
 		return fmt.Errorf("storage container is required")
 	}
+
+	// if len(cfg.Cors.AllowOrigins) == 0 {
+	// 	return fmt.Errorf("cors allow origins is required")
+	// }
+
+	// if len(cfg.Cors.AllowHeaders) == 0 {
+	// 	return fmt.Errorf("cors allow headers is required")
+	// }
+
+	// if len(cfg.Cors.AllowMethods) == 0 {
+	// 	return fmt.Errorf("cors allow methods is required")
+	// }
+
+	// if cfg.AzAd.TenantId == "" {
+	// 	return fmt.Errorf("azad tenant id is required")
+	// }
+
+	// if cfg.AzAd.ClientId == "" {
+	// 	return fmt.Errorf("azad client id is required")
+	// }
+
+	// if cfg.AzAd.ClientSecret == "" {
+	// 	return fmt.Errorf("azad client secret is required")
+	// }
 
 	return nil
 }

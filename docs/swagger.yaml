@@ -1,55 +1,89 @@
 basePath: /api/v1
 definitions:
-    medioa_internal_storage_models.UploadResponse:
-        properties:
-            ext:
-                type: string
-            file_name:
-                type: string
-            token:
-                type: string
-            url:
-                type: string
-        type: object
+  medioa_internal_storage_models.DownloadResponse:
+    properties:
+      url:
+        type: string
+    type: object
+  medioa_internal_storage_models.UploadResponse:
+    properties:
+      ext:
+        type: string
+      file_name:
+        description: review to remove later
+        type: string
+      token:
+        type: string
+      url:
+        type: string
+    type: object
 info:
-    contact:
-        email: vukynpro@gmail.com
-        name: Vũ Kỳ
-        url: github.com/vukyn
-    description: Medioa REST API (with gin-gonic).
-    title: Medioa API
-    version: "1.0"
+  contact:
+    email: vukynpro@gmail.com
+    name: Vũ Kỳ
+    url: github.com/vukyn
+  description: Medioa REST API (with gin-gonic).
+  title: Medioa API
+  version: "1.0"
 paths:
-    /storage/upload:
-        post:
-            consumes:
-                - multipart/form-data
-            description: Upload media file (images, videos, etc.)
-            parameters:
-                - description: session id
-                  in: query
-                  name: id
-                  type: string
-                - description: binary file
-                  in: formData
-                  name: chunk
-                  required: true
-                  type: file
-            produces:
-                - application/json
-            responses:
-                "201":
-                    description: Created
-                    schema:
-                        $ref: "#/definitions/medioa_internal_storage_models.UploadResponse"
-            security:
-                - ApiKeyAuth: []
-            summary: Upload media
-            tags:
-                - Storage
+  /storage/download/{file_name}:
+    get:
+      consumes:
+      - aplication/json
+      description: Download media file
+      parameters:
+      - description: file name
+        in: path
+        name: file_name
+        required: true
+        type: string
+      - description: token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/medioa_internal_storage_models.DownloadResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Download media
+      tags:
+      - Storage
+  /storage/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload media file (images, videos, etc.)
+      parameters:
+      - description: session id
+        in: query
+        name: id
+        type: string
+      - description: binary file
+        in: formData
+        name: chunk
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/medioa_internal_storage_models.UploadResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Upload media
+      tags:
+      - Storage
 securityDefinitions:
-    ApiKeyAuth:
-        in: header
-        name: Authorization
-        type: apiKey
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

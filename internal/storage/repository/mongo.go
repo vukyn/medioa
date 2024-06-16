@@ -3,9 +3,12 @@ package repository
 import (
 	"context"
 	"medioa/config"
+	"medioa/constants"
 	"medioa/internal/storage/entity"
 	commonModel "medioa/models"
 
+	"github.com/vukyn/kuery/conversion"
+	"go.mongodb.org/mongo-driver/bson"
 	mongoo "go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -31,7 +34,41 @@ func (m *mongo) GetById(ctx context.Context, id int64) (*entity.Storage, error) 
 	return nil, nil
 }
 func (m *mongo) GetOne(ctx context.Context, queries map[string]interface{}) (*entity.Storage, error) {
-	return nil, nil
+	filter := make([]bson.E, 0)
+	uuid := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_UUID, "", true)
+	downloadUrl := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_DOWNLOAD_URL, "", true)
+	_type := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_TYPE, "", true)
+	token := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_TOKEN, "", true)
+	ext := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_EXT, "", true)
+	lifeTime := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_LIFE_TIME, 0, true)
+
+	if uuid != "" {
+		filter = append(filter, bson.E{Key: "_id", Value: uuid})
+	}
+	if downloadUrl != "" {
+		filter = append(filter, bson.E{Key: "download_url", Value: downloadUrl})
+	}
+	if _type != "" {
+		filter = append(filter, bson.E{Key: "type", Value: _type})
+	}
+	if token != "" {
+		filter = append(filter, bson.E{Key: "token", Value: token})
+	}
+	if lifeTime != 0 {
+		filter = append(filter, bson.E{Key: "life_time", Value: lifeTime})
+	}
+	if ext != "" {
+		filter = append(filter, bson.E{Key: "ext", Value: ext})
+	}
+
+	var obj entity.Storage
+	err := m.withCollection().FindOne(ctx, filter).Decode(&obj)
+	if err == mongoo.ErrNoDocuments {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+	return &obj, nil
 }
 func (m *mongo) GetList(ctx context.Context, queries map[string]interface{}) ([]*entity.Storage, error) {
 	return nil, nil

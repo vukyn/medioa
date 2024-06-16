@@ -28,10 +28,11 @@ func InitHandler(cfg *config.Config, lib *commonModel.Lib, usecase usecase.IUsec
 }
 
 func (h Handler) MapRoutes(group *gin.RouterGroup) {
-	group.POST(constants.STORAGE_ENDPOINT_UPLOAD, h.UploadMedia)
+	group.POST(constants.STORAGE_ENDPOINT_UPLOAD, h.Upload)
+	group.GET(constants.STORAGE_ENDPOINT_DOWNLOAD, h.Download)
 }
 
-// UploadMedia godoc
+// Upload godoc
 //
 //	@Security		ApiKeyAuth
 //	@Summary		Upload media
@@ -43,8 +44,8 @@ func (h Handler) MapRoutes(group *gin.RouterGroup) {
 //	@Param			chunk	formData	file	true	"binary file"
 //	@Success		201		{object}	models.UploadResponse
 //	@Router			/storage/upload [post]
-func (h Handler) UploadMedia(ctx *gin.Context) {
-	log := log.New("handler", "UploadMedia")
+func (h Handler) Upload(ctx *gin.Context) {
+	log := log.New("handler", "Upload")
 
 	id := ctx.Query("id")
 	file, err := ctx.FormFile("chunk")
@@ -65,4 +66,34 @@ func (h Handler) UploadMedia(ctx *gin.Context) {
 	}
 
 	http.Created(ctx, res)
+}
+
+// Download godoc
+//
+//	@Security		ApiKeyAuth
+//	@Summary		Download media
+//	@Description	Download media file
+//	@Tags			Storage
+//	@Accept			aplication/json
+//	@Produce		json
+//	@Param			file_name	path		string	true	"file name"
+//	@Param			token		query		string	true	"token"
+//	@Success		200			{object}	models.DownloadResponse
+//	@Router			/storage/download/{file_name} [get]
+func (h Handler) Download(ctx *gin.Context) {
+	// log := log.New("handler", "Download")
+
+	userId := int64(1)
+	fileName := ctx.Param("file_name")
+	token := ctx.Query("token")
+	res, err := h.usecase.Download(ctx, userId, &models.DownloadRequest{
+		FileName: fileName,
+		Token:    token,
+	})
+	if err != nil {
+		http.Internal(ctx, err)
+		return
+	}
+
+	http.Ok(ctx, res)
 }

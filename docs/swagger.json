@@ -1,79 +1,138 @@
 {
-	"swagger": "2.0",
-	"info": {
-		"description": "Medioa REST API (with gin-gonic).",
-		"title": "Medioa API",
-		"contact": {
-			"name": "Vũ Kỳ",
-			"url": "github.com/vukyn",
-			"email": "vukynpro@gmail.com"
-		},
-		"version": "1.0"
-	},
-	"basePath": "/api/v1",
-	"paths": {
-		"/storage/upload": {
-			"post": {
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"description": "Upload media file (images, videos, etc.)",
-				"consumes": ["multipart/form-data"],
-				"produces": ["application/json"],
-				"tags": ["Storage"],
-				"summary": "Upload media",
-				"parameters": [
-					{
-						"type": "string",
-						"description": "session id",
-						"name": "id",
-						"in": "query"
-					},
-					{
-						"type": "file",
-						"description": "binary file",
-						"name": "chunk",
-						"in": "formData",
-						"required": true
-					}
-				],
-				"responses": {
-					"201": {
-						"description": "Created",
-						"schema": {
-							"$ref": "#/definitions/medioa_internal_storage_models.UploadResponse"
-						}
-					}
-				}
-			}
-		}
-	},
-	"definitions": {
-		"medioa_internal_storage_models.UploadResponse": {
-			"type": "object",
-			"properties": {
-				"ext": {
-					"type": "string"
-				},
-				"file_name": {
-					"type": "string"
-				},
-				"token": {
-					"type": "string"
-				},
-				"url": {
-					"type": "string"
-				}
-			}
-		}
-	},
-	"securityDefinitions": {
-		"ApiKeyAuth": {
-			"type": "apiKey",
-			"name": "Authorization",
-			"in": "header"
-		}
-	}
+    "swagger": "2.0",
+    "info": {
+        "description": "Medioa REST API (with gin-gonic).",
+        "title": "Medioa API",
+        "contact": {
+            "name": "Vũ Kỳ",
+            "url": "github.com/vukyn",
+            "email": "vukynpro@gmail.com"
+        },
+        "version": "1.0"
+    },
+    "basePath": "/api/v1",
+    "paths": {
+        "/storage/download/{file_name}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Download media file",
+                "consumes": [
+                    "aplication/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Storage"
+                ],
+                "summary": "Download media",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "file name",
+                        "name": "file_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/medioa_internal_storage_models.DownloadResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/storage/upload": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Upload media file (images, videos, etc.)",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Storage"
+                ],
+                "summary": "Upload media",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session id",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "file",
+                        "description": "binary file",
+                        "name": "chunk",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/medioa_internal_storage_models.UploadResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "medioa_internal_storage_models.DownloadResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "medioa_internal_storage_models.UploadResponse": {
+            "type": "object",
+            "properties": {
+                "ext": {
+                    "type": "string"
+                },
+                "file_name": {
+                    "description": "review to remove later",
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
 }
