@@ -71,157 +71,165 @@
 			</div>
 		</div>
 		<script>
-			$(document).ready(function () {
-				// Connect to WebSocket server
-				var socketId;
-				var socket;
+			var socket;
+			var sessionId;
 
-				function connectWebSocket() {
-					// Establish WebSocket connection
-					socket = new WebSocket("ws://localhost:5001/ws");
-
-					socket.onopen = function () {
-						showNotificationWS("WebSocket connected");
-                        $("#progressBar").css("width", "0%");
-						$("#uploadButton").prop("disabled", false);
-						$("#resetButton").prop("disabled", false);
-					};
-
-					socket.onmessage = function (event) {
-						// Assuming the first message from the server is the socket ID
-						if (!socketId) {
-							socketId = event.data;
-							console.log("Received socket Id:", socketId);
-							return;
-						}
-						percentValue = parseFloat(event.data);
-						if (percentValue >= 100) {
-							percentValue = 100;
-						}
-						$("#progressBar").css("width", percentValue + "%");
-						$("#progressBar").text(Math.floor(percentValue) + "%");
-					};
-
-					socket.onclose = function (event) {
-						showErrorWS("WebSocket disconnected, reconnecting...");
-						// Attempt to reconnect after a short delay
-						setTimeout(function () {
-							connectWebSocket();
-						}, 3000); // 3 seconds delay before reconnecting
-						$("#uploadButton").prop("disabled", true);
-						$("#resetButton").prop("disabled", true);
-					};
-
-					// socket.onerror = function (error) {
-					// 	showError("WebSocket error:", error);
-					// };
-				}
-
-				connectWebSocket(); // Initial WebSocket connection
-
-				$("#fileInput").change(function () {
-					if (this.files.length > 1) {
-						showNotification("Please select only one file.");
-						this.value = ""; // Clear the input
-						$('label[for="fileInput"]').text("Click to choose a file");
-						return;
-					}
-
-					var fileName;
-					if (navigator.platform.indexOf("Win") !== -1) {
-						// Windows
-						fileName = $(this).val().split("\\").pop();
-					} else if (navigator.platform.indexOf("Mac") !== -1) {
-						// Mac
-						fileName = $(this).val().split("/").pop();
-					}
-					if (fileName) {
-						$('label[for="fileInput"]').text(fileName);
-					} else {
-						$('label[for="fileInput"]').text("Click to choose a file");
-					}
+			function startSession() {
+				$.ajax({
+					url: "/ws/start",
+					type: "GET",
+					success: function (data) {
+						sessionId = data.id;
+						console.log("Session ID:", sessionId);
+						connectWebSocket(sessionId);
+					},
+					error: function (xhr, status, error) {
+						console.error("Error starting session:", error);
+					},
 				});
+			}
 
-				$("#uploadForm").on("submit", function (event) {
-					event.preventDefault();
+			function connectWebSocket(id) {
+				// Establish WebSocket connection
+				socket = new WebSocket("ws://localhost:5001/ws/" + id);
 
-					var formData = new FormData();
-					var fileInput = $("#fileInput")[0];
-					if (fileInput.files.length === 0) {
-						showNotification("Please select a file.");
-						return;
-					}
-					formData.append("chunk", fileInput.files[0]);
-					var endpoint;
-					if (socket === undefined || socketId === "") {
-						endpoint = "/api/v1/storage/upload";
-					} else {
-						endpoint = "/api/v1/storage/upload?id=" + socketId;
-					}
-
-					$.ajax({
-						url: endpoint,
-						type: "POST",
-						data: formData,
-						contentType: false,
-						processData: false,
-						success: function (response) {
-							showSuccess("File uploaded successfully.");
-							$("#resetButton").trigger("click");
-						},
-						error: function () {
-							showError("An error occurred while uploading the file.");
-						},
-					});
-				});
-
-				$("#resetButton").click(function () {
-					$("#uploadForm")[0].reset();
-					$('label[for="fileInput"]').text("Click to choose a file");
+				socket.onopen = function () {
+					showNotificationWS("WebSocket connected");
 					$("#progressBar").css("width", "0%");
-					$("#progressBar").text("0%");
-				});
+					$("#uploadButton").prop("disabled", false);
+					$("#resetButton").prop("disabled", false);
+				};
 
-				function showNotification(message) {
-					Toastify({
-						text: message,
-						duration: 3000,
-						close: true,
-					}).showToast();
+				socket.onmessage = function (event) {
+					percentValue = parseFloat(event.data);
+					if (percentValue >= 100) {
+						percentValue = 100;
+					}
+					$("#progressBar").css("width", percentValue + "%");
+					$("#progressBar").text(Math.floor(percentValue) + "%");
+				};
+
+				socket.onclose = function (event) {
+					showErrorWS("WebSocket disconnected, reconnecting...");
+					$("#uploadButton").prop("disabled", true);
+					$("#resetButton").prop("disabled", true);
+
+					// Attempt to reconnect after a short delay
+					setTimeout(function () {
+						connectWebSocket();
+					}, 3000);
+				};
+
+				// socket.onerror = function (error) {
+				// 	showError("WebSocket error:", error);
+				// };
+			}
+
+			$("#fileInput").change(function () {
+				if (this.files.length > 1) {
+					showNotification("Please select only one file.");
+					this.value = ""; // Clear the input
+					$('label[for="fileInput"]').text("Click to choose a file");
+					return;
 				}
-				function showNotificationWS(message) {
-					Toastify({
-						position: "center",
-						text: message,
-						duration: 1500,
-						close: false,
-					}).showToast();
+
+				var fileName;
+				if (navigator.platform.indexOf("Win") !== -1) {
+					// Windows
+					fileName = $(this).val().split("\\").pop();
+				} else if (navigator.platform.indexOf("Mac") !== -1) {
+					// Mac
+					fileName = $(this).val().split("/").pop();
 				}
-				function showErrorWS(message) {
-					Toastify({
-						position: "center",
-						text: message,
-						duration: 1500,
-						close: false,
-						backgroundColor: "red",
-					}).showToast();
+				if (fileName) {
+					$('label[for="fileInput"]').text(fileName);
+				} else {
+					$('label[for="fileInput"]').text("Click to choose a file");
 				}
-				function showError(message) {
-					Toastify({
-						text: message,
-						duration: 3000,
-						close: true,
-						backgroundColor: "red",
-					}).showToast();
+			});
+
+			$("#uploadForm").on("submit", function (event) {
+				event.preventDefault();
+
+				var formData = new FormData();
+				var fileInput = $("#fileInput")[0];
+				if (fileInput.files.length === 0) {
+					showNotification("Please select a file.");
+					return;
 				}
-				function showSuccess(message) {
-					Toastify({
-						text: message,
-						duration: 3000,
-						close: true,
-						backgroundColor: "green",
-					}).showToast();
+				formData.append("chunk", fileInput.files[0]);
+				var endpoint;
+				if (socket === undefined || sessionId === "") {
+					endpoint = "/api/v1/storage/upload";
+				} else {
+					endpoint = "/api/v1/storage/upload?id=" + sessionId;
 				}
+
+				$.ajax({
+					url: endpoint,
+					type: "POST",
+					data: formData,
+					contentType: false,
+					processData: false,
+					success: function (response) {
+						showSuccess("File uploaded successfully.");
+						$("#resetButton").trigger("click");
+					},
+					error: function () {
+						showError("An error occurred while uploading the file.");
+					},
+				});
+			});
+
+			$("#resetButton").click(function () {
+				$("#uploadForm")[0].reset();
+				$('label[for="fileInput"]').text("Click to choose a file");
+				$("#progressBar").css("width", "0%");
+				$("#progressBar").text("0%");
+			});
+
+			function showNotification(message) {
+				Toastify({
+					text: message,
+					duration: 3000,
+					close: true,
+				}).showToast();
+			}
+			function showNotificationWS(message) {
+				Toastify({
+					position: "center",
+					text: message,
+					duration: 1500,
+					close: false,
+				}).showToast();
+			}
+			function showErrorWS(message) {
+				Toastify({
+					position: "center",
+					text: message,
+					duration: 1500,
+					close: false,
+					backgroundColor: "red",
+				}).showToast();
+			}
+			function showError(message) {
+				Toastify({
+					text: message,
+					duration: 3000,
+					close: true,
+					backgroundColor: "red",
+				}).showToast();
+			}
+			function showSuccess(message) {
+				Toastify({
+					text: message,
+					duration: 3000,
+					close: true,
+					backgroundColor: "green",
+				}).showToast();
+			}
+			$(document).ready(function () {
+				startSession();
 			});
 		</script>
 	</body>

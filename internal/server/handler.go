@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/olahol/melody"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -46,16 +47,20 @@ func (s *Server) initSocket() {
 	socket := s.socket
 	router := s.router
 
-	router.GET("/ws", func(c *gin.Context) {
-		socket.HandleRequest(c.Writer, c.Request)
+	router.GET("/ws/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		socket.HandleRequestWithKeys(c.Writer, c.Request, map[string]any{"id": id})
+	})
+
+	router.GET("/ws/start", func(c *gin.Context) {
+		id := uuid.New().String()
+		c.JSON(http.StatusOK, gin.H{"id": id})
 	})
 
 	socket.HandleConnect(func(sess *melody.Session) {
-		id := sess.Request.RemoteAddr
-		sess.Set("id", id)
+		id := sess.Keys["id"].(string)
 		log.Info("connected: %s", id)
 		s.lib.SocketConn.Set(id, sess)
-		sess.Write([]byte(id)) // Send the socket ID to the client
 	})
 
 	socket.HandleError(func(sess *melody.Session, e error) {
