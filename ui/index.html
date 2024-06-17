@@ -10,8 +10,8 @@
 		<!-- jQuery -->
 
 		<!-- Bootstrap -->
-		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
-		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
 		<!-- Bootstrap -->
 
 		<!-- Toaster Notification -->
@@ -78,6 +78,9 @@
 			}
 			.action-buttons-container {
 				white-space: nowrap; /* Prevent buttons from wrapping */
+			}
+			.tooltip-inner {
+				font-size: 14px; /* Adjust tooltip font size */
 			}
 		</style>
 	</head>
@@ -275,6 +278,15 @@
 				files.push({ fileName, downloadApi, downloadLink, uploadedAt });
 				localStorage.setItem("uploadedFiles", JSON.stringify(files));
 			}
+			function updateFileDownloadLinkFromLocalStorage(fileName, downloadLink) {
+				var files = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
+				files.forEach(function (file) {
+					if (file.fileName === fileName) {
+						file.downloadLink = downloadLink;
+					}
+				});
+				localStorage.setItem("uploadedFiles", JSON.stringify(files));
+			}
 			function deleteFileFromLocalStorage(fileName) {
 				var files = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
 				files = files.filter(function (file) {
@@ -293,13 +305,13 @@
                     <td>${fileName}</td>
                     <td>
                         <a href="${downloadLink}" target="_blank">link</a>
-                       <i class="fas fa-copy copy-url-icon" style="cursor: pointer;" data-url="${downloadLink}"></i>
+                    	<i class="fas fa-copy copy-url-icon" style="cursor: pointer;" data-url="${downloadLink}"></i>
                     </td>
                     <td>${uploadedAt}</td>
                     <td>
 						<div class="action-buttons-container">
-							<button class="btn btn-info refresh-row-btn"><i class="fas fa-sync-alt"></i></button>
-							<button class="btn btn-danger delete-row-btn"><i class="fas fa-trash-alt"></i></button>
+							<button class="btn btn-info refresh-row-btn" data-toggle="tooltip" title="Refresh link"><i class="fas fa-sync-alt"></i></button>
+							<button class="btn btn-danger delete-row-btn" data-toggle="tooltip" title="Delete"><i class="fas fa-trash-alt"></i></button>
         				</div>
                     </td>
                 </tr>`;
@@ -312,14 +324,7 @@
 					.last()
 					.click(function () {
 						var url = $(this).data("url");
-						navigator.clipboard.writeText(url).then(
-							function () {
-								showNotification("Download link copied to clipboard!");
-							},
-							function () {
-								showError("Failed to copy download link.");
-							}
-						);
+						copyClipboard(url)
 					});
 
 				$(".refresh-row-btn")
@@ -327,11 +332,29 @@
 					.click(function () {
 						var row = $(this).closest("tr");
 						var fileName = row.find("td:first").text();
-						deleteFileFromLocalStorage(fileName);
-						row.remove();
-						if ($("#filesTable tbody tr").length === 0) {
-							$("#filesTable").hide();
-						}
+
+						$.ajax({
+							url: downloadApi,
+							type: "GET",
+							success: function (downloadResponse) {
+								var actualDownloadUrl = downloadResponse.data.url;
+								console.log("Actual download link:", actualDownloadUrl);
+
+								// Update download link in local storage
+								updateFileDownloadLinkFromLocalStorage(fileName, actualDownloadUrl);
+
+								// Update the table
+								row.find("td:nth-child(2) a").attr("href", actualDownloadUrl).text("link");
+
+								// Update copy-url-icon click event
+								row.find("td:nth-child(2) i").data("url", actualDownloadUrl);
+
+								showSuccess("Download link refreshed successfully.");
+							},
+							error: function () {
+								showError("An error occurred while refreshing the download link.");
+							},
+						});
 					});
 
 				$(".delete-row-btn")
@@ -345,6 +368,16 @@
 							$("#filesTable").hide();
 						}
 					});
+			}
+			function copyClipboard(text) {
+				navigator.clipboard.writeText(text).then(
+					function () {
+						showNotification("Copied to clipboard!");
+					},
+					function () {
+						showError("Failed to copy to clipboard.");
+					}
+				);
 			}
 			function showNotification(message) {
 				Toastify({
@@ -390,6 +423,7 @@
 			$(document).ready(function () {
 				// Load files from local storage on page load
 				loadFilesFromLocalStorage();
+				$('[data-toggle="tooltip"]').tooltip();
 				startSession();
 			});
 		</script>
