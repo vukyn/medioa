@@ -19,6 +19,10 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.10.0/toastify.min.js"></script>
 		<!-- Toaster Notification -->
 
+		<!-- Font Awesome -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+		<!-- Font Awesome -->
+
 		<style>
 			body {
 				background-color: #f8f9fa;
@@ -53,6 +57,28 @@
 				cursor: pointer;
 				color: #007bff;
 			}
+			table th {
+				font-size: 0.75rem; /* Adjust the size as needed */
+				text-align: center;
+				vertical-align: middle !important; /* Align text vertically */
+			}
+			table td {
+				font-size: 0.7rem; /* Adjust the size as needed */
+				text-align: center;
+			}
+			.delete-row-btn,
+			.refresh-row-btn {
+				display: inline-block;
+				vertical-align: middle; /* Align buttons vertically */
+				margin-right: 5px; /* Adjust spacing between buttons */
+			}
+			.delete-row-btn i,
+			.refresh-row-btn i {
+				font-size: 0.875rem; /* Adjust the size of the icons as needed */
+			}
+			.action-buttons-container {
+				white-space: nowrap; /* Prevent buttons from wrapping */
+			}
 		</style>
 	</head>
 	<body>
@@ -71,7 +97,19 @@
 			</div>
 			<div id="downloadLinkContainer" class="mt-3" style="display: none">
 				<a id="downloadLink" href="#" class="btn btn-info" target="_blank">Download File</a>
+				<button id="copyButton" class="btn btn-warning">Copy to Clipboard</button>
 			</div>
+			<table id="filesTable" class="table mt-5" style="display: none">
+				<thead>
+					<tr>
+						<th>FileName</th>
+						<th>Download URL</th>
+						<th>Uploaded At</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
 		</div>
 		<script>
 			var socket;
@@ -97,7 +135,7 @@
 				socket = new WebSocket("ws://localhost:5001/ws/" + id);
 
 				socket.onopen = function () {
-					showNotificationWS("WebSocket connected");
+					showNotificationWS("Medioa connected");
 					$("#progressBar").css("width", "0%");
 					$("#uploadButton").prop("disabled", false);
 					$("#resetButton").prop("disabled", false);
@@ -113,7 +151,7 @@
 				};
 
 				socket.onclose = function (event) {
-					showErrorWS("WebSocket disconnected, reconnecting...");
+					showErrorWS("Medioa disconnected, reconnecting...");
 					$("#uploadButton").prop("disabled", true);
 					$("#resetButton").prop("disabled", true);
 
@@ -136,14 +174,7 @@
 					return;
 				}
 
-				var fileName;
-				if (navigator.platform.indexOf("Win") !== -1) {
-					// Windows
-					fileName = $(this).val().split("\\").pop();
-				} else if (navigator.platform.indexOf("Mac") !== -1) {
-					// Mac
-					fileName = $(this).val().split("/").pop();
-				}
+				var fileName = getFileName(this.value);
 				if (fileName) {
 					$('label[for="fileInput"]').text(fileName);
 				} else {
@@ -176,13 +207,31 @@
 					processData: false,
 					success: function (response) {
 						showSuccess("File uploaded successfully.");
+						console.log("API get download link:", response.data.url);
+						$.ajax({
+							url: response.data.url,
+							type: "GET",
+							success: function (downloadResponse) {
+								var apiDownloadUrl = response.data.url;
+								var actualDownloadUrl = downloadResponse.data.url;
+								var fileName = getFileName($("#fileInput").val());
+								var uploadedAt = new Date().toLocaleString();
+								console.log("Actual download link:", actualDownloadUrl);
 
-						// Assuming 'response.fileUrl' contains the URL to download the file
-						console.log("File URL:", response.data.url);
-						$("#downloadLink").attr("href", response.data.url);
-						$("#downloadLinkContainer").show();
+								// Save file info to local storage
+								saveFileToLocalStorage(fileName, apiDownloadUrl, actualDownloadUrl, uploadedAt);
 
-						$("#resetButton").trigger("click");
+								// Update the table
+								addFileToTable(fileName, apiDownloadUrl, actualDownloadUrl, uploadedAt);
+
+								$("#resetButton").trigger("click");
+								$("#downloadLink").attr("href", actualDownloadUrl);
+								$("#downloadLinkContainer").show();
+							},
+							error: function () {
+								showError("An error occurred while retrieving the download link.");
+							},
+						});
 					},
 					error: function () {
 						showError("An error occurred while uploading the file.");
@@ -195,8 +244,108 @@
 				$('label[for="fileInput"]').text("Click to choose a file");
 				$("#progressBar").css("width", "0%");
 				$("#progressBar").text("0%");
+				$("#downloadLinkContainer").hide();
+				$("#downloadLink").attr("href", "");
 			});
 
+			$("#copyButton").click(function () {
+				var downloadUrl = $("#downloadLink").attr("href");
+				navigator.clipboard.writeText(downloadUrl).then(
+					function () {
+						showNotification("Download link copied to clipboard!");
+					},
+					function () {
+						showError("Failed to copy download link.");
+					}
+				);
+			});
+
+			function getFileName(fileName) {
+				if (navigator.platform.indexOf("Win") !== -1) {
+					// Windows
+					fileName = fileName.split("\\").pop();
+				} else if (navigator.platform.indexOf("Mac") !== -1) {
+					// Mac
+					fileName = fileName.split("/").pop();
+				}
+				return fileName;
+			}
+			function saveFileToLocalStorage(fileName, downloadApi, downloadLink, uploadedAt) {
+				var files = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
+				files.push({ fileName, downloadApi, downloadLink, uploadedAt });
+				localStorage.setItem("uploadedFiles", JSON.stringify(files));
+			}
+			function deleteFileFromLocalStorage(fileName) {
+				var files = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
+				files = files.filter(function (file) {
+					return file.fileName !== fileName;
+				});
+				localStorage.setItem("uploadedFiles", JSON.stringify(files));
+			}
+			function loadFilesFromLocalStorage() {
+				var files = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
+				files.forEach(function (file) {
+					addFileToTable(file.fileName, file.downloadApi, file.downloadLink, file.uploadedAt);
+				});
+			}
+			function addFileToTable(fileName, downloadApi, downloadLink, uploadedAt) {
+				var row = `<tr>
+                    <td>${fileName}</td>
+                    <td>
+                        <a href="${downloadLink}" target="_blank">link</a>
+                       <i class="fas fa-copy copy-url-icon" style="cursor: pointer;" data-url="${downloadLink}"></i>
+                    </td>
+                    <td>${uploadedAt}</td>
+                    <td>
+						<div class="action-buttons-container">
+							<button class="btn btn-info refresh-row-btn"><i class="fas fa-sync-alt"></i></button>
+							<button class="btn btn-danger delete-row-btn"><i class="fas fa-trash-alt"></i></button>
+        				</div>
+                    </td>
+                </tr>`;
+
+				$("#filesTable tbody").append(row);
+				$("#filesTable").show();
+
+				// Attach event listeners to new buttons
+				$(".copy-url-icon")
+					.last()
+					.click(function () {
+						var url = $(this).data("url");
+						navigator.clipboard.writeText(url).then(
+							function () {
+								showNotification("Download link copied to clipboard!");
+							},
+							function () {
+								showError("Failed to copy download link.");
+							}
+						);
+					});
+
+				$(".refresh-row-btn")
+					.last()
+					.click(function () {
+						var row = $(this).closest("tr");
+						var fileName = row.find("td:first").text();
+						deleteFileFromLocalStorage(fileName);
+						row.remove();
+						if ($("#filesTable tbody tr").length === 0) {
+							$("#filesTable").hide();
+						}
+					});
+
+				$(".delete-row-btn")
+					.last()
+					.click(function () {
+						var row = $(this).closest("tr");
+						var fileName = row.find("td:first").text();
+						deleteFileFromLocalStorage(fileName);
+						row.remove();
+						if ($("#filesTable tbody tr").length === 0) {
+							$("#filesTable").hide();
+						}
+					});
+			}
 			function showNotification(message) {
 				Toastify({
 					text: message,
@@ -237,7 +386,10 @@
 					backgroundColor: "green",
 				}).showToast();
 			}
+
 			$(document).ready(function () {
+				// Load files from local storage on page load
+				loadFilesFromLocalStorage();
 				startSession();
 			});
 		</script>
