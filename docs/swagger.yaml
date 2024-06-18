@@ -1,8 +1,47 @@
 basePath: /api/v1
 definitions:
+  medioa_internal_storage_models.CreateSecretRequest:
+    properties:
+      master_key:
+        type: string
+      password:
+        type: string
+      pin_code:
+        type: string
+      username:
+        type: string
+    type: object
+  medioa_internal_storage_models.CreateSecretResponse:
+    properties:
+      access_token:
+        type: string
+      user_id:
+        type: string
+    type: object
   medioa_internal_storage_models.DownloadResponse:
     properties:
       url:
+        type: string
+    type: object
+  medioa_internal_storage_models.ResetPinCodeRequest:
+    properties:
+      access_token:
+        type: string
+      new_pin_code:
+        type: string
+    type: object
+  medioa_internal_storage_models.RetrieveSecretRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  medioa_internal_storage_models.RetrieveSecretResponse:
+    properties:
+      access_key:
+        type: string
+      user_id:
         type: string
     type: object
   medioa_internal_storage_models.UploadResponse:
@@ -29,7 +68,7 @@ paths:
   /storage/download/{file_name}:
     get:
       consumes:
-      - aplication/json
+      - application/json
       description: Download media file
       parameters:
       - description: file name
@@ -52,6 +91,141 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Download media
+      tags:
+      - Storage
+  /storage/secret:
+    post:
+      consumes:
+      - application/json
+      description: Create new secret for upload media
+      parameters:
+      - description: create secret request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/medioa_internal_storage_models.CreateSecretRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/medioa_internal_storage_models.CreateSecretResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create new secret
+      tags:
+      - Storage
+  /storage/secret/download/{file_name}:
+    get:
+      consumes:
+      - application/json
+      description: Download media file
+      parameters:
+      - description: file name
+        in: path
+        name: file_name
+        required: true
+        type: string
+      - description: token
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: secret
+        in: query
+        name: secret
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/medioa_internal_storage_models.DownloadResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Download media with secret
+      tags:
+      - Storage
+  /storage/secret/pin:
+    put:
+      consumes:
+      - application/json
+      description: Reset pin code for secret
+      parameters:
+      - description: reset pin request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/medioa_internal_storage_models.ResetPinCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Reset pin code
+      tags:
+      - Storage
+  /storage/secret/retrieve:
+    put:
+      consumes:
+      - application/json
+      description: Retrieve secret with new access token
+      parameters:
+      - description: retrieve secrect request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/medioa_internal_storage_models.RetrieveSecretRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/medioa_internal_storage_models.RetrieveSecretResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Retrieve secret
+      tags:
+      - Storage
+  /storage/secret/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload media file (images, videos, etc.)
+      parameters:
+      - description: session id
+        in: query
+        name: id
+        type: string
+      - description: secret
+        in: query
+        name: secret
+        required: true
+        type: string
+      - description: binary file
+        in: formData
+        name: chunk
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/medioa_internal_storage_models.UploadResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Upload media with secret
       tags:
       - Storage
   /storage/upload:

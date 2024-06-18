@@ -90,7 +90,11 @@ func (m *mongo) CreateMany(ctx context.Context, objs []*entity.Storage) ([]*enti
 	return nil, nil
 }
 func (m *mongo) Update(ctx context.Context, obj *entity.Storage) (*entity.Storage, error) {
-	return nil, nil
+	_, err := m.withCollection().UpdateOne(ctx, bson.D{{Key: "_id", Value: obj.UUID}}, bson.D{{Key: "$set", Value: obj.ToBson()}})
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
 }
 func (m *mongo) UpdateMany(ctx context.Context, objs []*entity.Storage) (int64, error) {
 	return 0, nil

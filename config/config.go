@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/vukyn/kuery/crypto"
 )
 
 const (
@@ -23,6 +24,7 @@ type Config struct {
 	AzBlob  AzBlobConfig
 	Storage StorageConfig
 	Cors    CorsConfig
+	Secret  SecretConfig
 }
 
 type AppConfig struct {
@@ -60,6 +62,10 @@ type StorageConfig struct {
 	Container string
 }
 
+type SecretConfig struct {
+	SecretKey string
+}
+
 func Load() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
 		return nil, err
@@ -73,6 +79,7 @@ func Load() (*Config, error) {
 	parseStorageConfig(cfg)
 	parseCorsConfig(cfg)
 	parseAzAdConfig(cfg)
+	parseSecretConfig(cfg)
 	validation(cfg)
 
 	return cfg, nil
@@ -117,6 +124,13 @@ func parseAzAdConfig(cfg *Config) {
 	cfg.AzAd.TenantId = os.Getenv("AZAD_TENANT_ID")
 	cfg.AzAd.ClientId = os.Getenv("AZAD_CLIENT_ID")
 	cfg.AzAd.ClientSecret = os.Getenv("AZAD_CLIENT_SECRET")
+}
+
+func parseSecretConfig(cfg *Config) {
+	secretKey := os.Getenv("SECRET_KEY")
+	if secretKey != "" {
+		cfg.Secret.SecretKey = string(crypto.Md5Encrypt([]byte(secretKey)))
+	}
 }
 
 func validation(cfg *Config) error {
@@ -192,6 +206,10 @@ func validation(cfg *Config) error {
 	// if cfg.AzAd.ClientSecret == "" {
 	// 	return fmt.Errorf("azad client secret is required")
 	// }
+
+	if cfg.Secret.SecretKey == "" {
+		return fmt.Errorf("secret key is required")
+	}
 
 	return nil
 }

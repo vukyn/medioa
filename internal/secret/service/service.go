@@ -9,18 +9,18 @@ import (
 	"context"
 	"medioa/config"
 	"medioa/constants"
-	"medioa/internal/storage/entity"
-	"medioa/internal/storage/models"
-	repo "medioa/internal/storage/repository"
+	"medioa/internal/secret/entity"
+	"medioa/internal/secret/models"
+	repo "medioa/internal/secret/repository"
 	commonModel "medioa/models"
 	"medioa/pkg/log"
 	"medioa/pkg/routine"
 )
 
 type service struct {
-	cfg    *config.Config
-	lib    *commonModel.Lib
-	repo   repo.IRepository
+	cfg  *config.Config
+	lib  *commonModel.Lib
+	repo repo.IRepository
 }
 
 func InitService(cfg *config.Config, lib *commonModel.Lib, repo repo.IRepository) IService {
@@ -35,7 +35,7 @@ func (s *service) GetById(ctx context.Context, id int64) (*models.Response, erro
 	log := log.New("service", "GetById")
 	record, err := s.repo.GetById(ctx, id)
 	if err != nil {
-		log.Error("service.repo.GetById", err)
+		log.Error("service.repo.GetById: %v", err)
 		return nil, err
 	}
 	if record == nil {
@@ -49,10 +49,10 @@ func (s *service) GetList(ctx context.Context, params *models.RequestParams) ([]
 	queries := params.ToMap()
 	records, err := s.repo.GetList(ctx, queries)
 	if err != nil {
-		log.Error("service.repo.GetList", err)
+		log.Error("service.repo.GetList: %v", err)
 		return nil, err
 	}
-	return (&entity.Storage{}).ExportList(records), nil
+	return (&entity.Secret{}).ExportList(records), nil
 }
 
 func (s *service) GetListPaging(ctx context.Context, params *models.RequestParams) (*models.ListPaging, error) {
@@ -60,12 +60,12 @@ func (s *service) GetListPaging(ctx context.Context, params *models.RequestParam
 	queries := params.ToMap()
 	errCh := make(chan error, 2)
 	chCount := make(chan int64)
-	chRecords := make(chan []*entity.Storage)
+	chRecords := make(chan []*entity.Secret)
 	if params.ConfigQuery == constants.CONFIG_QUERY_GET_ALL || params.ConfigQuery == constants.CONFIG_QUERY_GET_LIST {
 		routine.Run(func() {
 			records, err := s.repo.GetListPaging(ctx, queries)
 			if err != nil {
-				log.Error("service.repo.GetListPaging", err)
+				log.Error("service.repo.GetListPaging: %v", err)
 				errCh <- err
 			}
 			chRecords <- records
@@ -79,7 +79,7 @@ func (s *service) GetListPaging(ctx context.Context, params *models.RequestParam
 		routine.Run(func() {
 			count, err := s.repo.Count(ctx, queries)
 			if err != nil {
-				log.Error("service.repo.Count", err)
+				log.Error("service.repo.Count: %v", err)
 				errCh <- err
 			}
 			chCount <- count
@@ -103,7 +103,7 @@ func (s *service) GetListPaging(ctx context.Context, params *models.RequestParam
 			Size:  params.Size,
 			Count: count,
 		},
-		Records: (&entity.Storage{}).ExportList(records),
+		Records: (&entity.Secret{}).ExportList(records),
 	}, nil
 }
 
@@ -112,7 +112,7 @@ func (s *service) GetOne(ctx context.Context, params *models.RequestParams) (*mo
 	queries := params.ToMap()
 	record, err := s.repo.GetOne(ctx, queries)
 	if err != nil {
-		log.Error("service.repo.GetOne", err)
+		log.Error("service.repo.GetOne: %v", err)
 		return nil, err
 	}
 	if record == nil {
@@ -126,7 +126,7 @@ func (s *service) Count(ctx context.Context, params *models.RequestParams) (int6
 	queries := params.ToMap()
 	count, err := s.repo.Count(ctx, queries)
 	if err != nil {
-		log.Error("service.repo.Count", err)
+		log.Error("service.repo.Count: %v", err)
 		return 0, err
 	}
 	return count, nil
@@ -134,11 +134,11 @@ func (s *service) Count(ctx context.Context, params *models.RequestParams) (int6
 
 func (s *service) Create(ctx context.Context, userId int64, params *models.SaveRequest) (*models.Response, error) {
 	log := log.New("service", "Create")
-	obj := &entity.Storage{}
+	obj := &entity.Secret{}
 	obj.ParseForCreate(params, userId)
 	res, err := s.repo.Create(ctx, obj)
 	if err != nil {
-		log.Error("service.repo.Create", err)
+		log.Error("service.repo.Create: %v", err)
 		return nil, err
 	}
 	return res.Export(), nil
@@ -146,22 +146,22 @@ func (s *service) Create(ctx context.Context, userId int64, params *models.SaveR
 
 func (s *service) CreateMany(ctx context.Context, userId int64, params []*models.SaveRequest) ([]*models.Response, error) {
 	log := log.New("service", "CreateMany")
-	objs := (&entity.Storage{}).ParseForCreateMany(params, userId)
+	objs := (&entity.Secret{}).ParseForCreateMany(params, userId)
 	res, err := s.repo.CreateMany(ctx, objs)
 	if err != nil {
-		log.Error("service.repo.Create", err)
+		log.Error("service.repo.Create: %v", err)
 		return nil, err
 	}
-	return (&entity.Storage{}).ExportList(res), nil
+	return (&entity.Secret{}).ExportList(res), nil
 }
 
 func (s *service) Update(ctx context.Context, userId int64, params *models.SaveRequest) (*models.Response, error) {
 	log := log.New("service", "Update")
-	obj := &entity.Storage{}
+	obj := &entity.Secret{}
 	obj.ParseForUpdate(params, userId)
 	res, err := s.repo.Update(ctx, obj)
 	if err != nil {
-		log.Error("service.repo.Update", err)
+		log.Error("service.repo.Update: %v", err)
 		return nil, err
 	}
 	return res.Export(), nil
@@ -169,10 +169,10 @@ func (s *service) Update(ctx context.Context, userId int64, params *models.SaveR
 
 func (s *service) UpdateMany(ctx context.Context, userId int64, params []*models.SaveRequest) (int64, error) {
 	log := log.New("service", "UpdateMany")
-	objs := (&entity.Storage{}).ParseForUpdateMany(params, userId)
+	objs := (&entity.Secret{}).ParseForUpdateMany(params, userId)
 	res, err := s.repo.UpdateMany(ctx, objs)
 	if err != nil {
-		log.Error("service.repo.UpdateMany", err)
+		log.Error("service.repo.UpdateMany: %v", err)
 		return 0, err
 	}
 	return res, nil

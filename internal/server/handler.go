@@ -2,6 +2,7 @@ package server
 
 import (
 	"medioa/config"
+	initSecret "medioa/internal/secret/init"
 	initStorage "medioa/internal/storage/init"
 	"medioa/pkg/log"
 	"net/http"
@@ -15,8 +16,11 @@ import (
 )
 
 func (s *Server) initHandler(group *gin.RouterGroup) {
+	// Init secret
+	secret := initSecret.NewInit(s.cfg, s.lib)
+
 	// Init storage
-	storage := initStorage.NewInit(s.lib, s.cfg)
+	storage := initStorage.NewInit(s.cfg, s.lib, secret)
 	storage.Handler.MapRoutes(group)
 }
 

@@ -11,4 +11,6 @@ type IHandler interface {
 	Download(ctx *gin.Context)
 	DownloadWithSecret(ctx *gin.Context)
 	CreateSecret(ctx *gin.Context)
+	RetrieveSecret(ctx *gin.Context)
+	ResetPinCode(ctx *gin.Context)
 }

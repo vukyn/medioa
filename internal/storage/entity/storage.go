@@ -92,15 +92,33 @@ func (e *Storage) ParseForUpdateMany(reqs []*models.SaveRequest, userId int64) [
 }
 
 func (e *Storage) ToBson() bson.D {
-	return bson.D{
-		{Key: "id", Value: e.Id},
-		{Key: "_id", Value: e.UUID},
-		{Key: "download_url", Value: e.DownloadUrl},
-		{Key: "type", Value: e.Type},
-		{Key: "token", Value: e.Token},
-		{Key: "life_time", Value: e.LifeTime},
-		{Key: "ext", Value: e.Ext},
-		{Key: "created_by", Value: e.CreatedBy},
-		{Key: "created_at", Value: e.CreatedAt.UnixMilli()},
+	d := make(bson.D, 0)
+	if e.Id > 0 {
+		d = append(d, bson.E{Key: "id", Value: e.Id})
 	}
+	if e.UUID != "" {
+		d = append(d, bson.E{Key: "_id", Value: e.UUID})
+	}
+	if e.DownloadUrl != "" {
+		d = append(d, bson.E{Key: "download_url", Value: e.DownloadUrl})
+	}
+	if e.Type != "" {
+		d = append(d, bson.E{Key: "type", Value: e.Type})
+	}
+	if e.Token != "" {
+		d = append(d, bson.E{Key: "token", Value: e.Token})
+	}
+	if e.LifeTime > 0 {
+		d = append(d, bson.E{Key: "life_time", Value: e.LifeTime})
+	}
+	if e.Ext != "" {
+		d = append(d, bson.E{Key: "ext", Value: e.Ext})
+	}
+	if e.CreatedBy > 0 {
+		d = append(d, bson.E{Key: "created_by", Value: e.CreatedBy})
+	}
+	if !e.CreatedAt.IsZero() {
+		d = append(d, bson.E{Key: "created_at", Value: e.CreatedAt.UnixMilli()})
+	}
+	return d
 }
