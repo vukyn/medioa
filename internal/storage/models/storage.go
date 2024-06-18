@@ -14,6 +14,19 @@ func (r *UploadRequest) ToBlobRequest() *UploadBlobRequest {
 	}
 }
 
+type UploadWithSecretRequest struct {
+	SessionId string                `json:"id"`
+	Secret    string                `json:"secret"`
+	File      *multipart.FileHeader `json:"file"`
+}
+
+func (r *UploadWithSecretRequest) ToBlobRequest() *UploadBlobRequest {
+	return &UploadBlobRequest{
+		SessionId: r.SessionId,
+		File:      r.File,
+	}
+}
+
 type UploadResponse struct {
 	Url      string `json:"url"`
 	Token    string `json:"token"`
@@ -23,6 +36,12 @@ type UploadResponse struct {
 
 type DownloadRequest struct {
 	FileName string `json:"file_name"`
+	Token    string `json:"token"`
+}
+
+type DownloadWithSecretRequest struct {
+	FileName string `json:"file_name"`
+	Secret   string `json:"secret"`
 	Token    string `json:"token"`
 }
 

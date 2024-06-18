@@ -112,6 +112,7 @@ func (h Handler) Download(ctx *gin.Context) {
 //	@Router			/storage/secret/upload [post]
 func (h Handler) UploadWithSecret(ctx *gin.Context) {
 	id := ctx.Query("id")
+	secret := ctx.Query("secret")
 	file, err := ctx.FormFile("chunk")
 	if err != nil {
 		http.BadRequest(ctx, err)
@@ -119,8 +120,9 @@ func (h Handler) UploadWithSecret(ctx *gin.Context) {
 	}
 
 	userId := int64(1)
-	res, err := h.usecase.Upload(ctx, userId, &models.UploadRequest{
+	res, err := h.usecase.UploadWithSecret(ctx, userId, &models.UploadWithSecretRequest{
 		SessionId: id,
+		Secret:    secret,
 		File:      file,
 	})
 	if err != nil {
@@ -148,9 +150,11 @@ func (h Handler) DownloadWithSecret(ctx *gin.Context) {
 	userId := int64(1)
 	fileName := ctx.Param("file_name")
 	token := ctx.Query("token")
-	res, err := h.usecase.Download(ctx, userId, &models.DownloadRequest{
+	secret := ctx.Query("secret")
+	res, err := h.usecase.DownloadWithSecret(ctx, userId, &models.DownloadWithSecretRequest{
 		FileName: fileName,
 		Token:    token,
+		Secret:   secret,
 	})
 	if err != nil {
 		http.Internal(ctx, err)
