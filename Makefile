@@ -34,8 +34,9 @@ tag:
 	git push origin v$(VERSION)
 
 tag-docker:
-	@printf $(COLOR) "Release image version $(PROJECT_NAME):v$(VERSION)"
-	docker push $(PROJECT_NAME):v$(VERSION)
+	@printf $(COLOR) "Release image version $(PROJECT_NAME):$(VERSION)"
+	docker tag $(PROJECT_NAME):$(VERSION) $(USERNAME)/$(PROJECT_NAME):$(VERSION)
+	docker push $(USERNAME)/$(PROJECT_NAME):$(VERSION)
 
 build-docker:
 	@printf $(COLOR) "Building docker image $(PROJECT_NAME)"
