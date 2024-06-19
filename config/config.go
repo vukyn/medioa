@@ -67,8 +67,11 @@ type SecretConfig struct {
 }
 
 func Load() (*Config, error) {
-	if err := godotenv.Load(); err != nil {
-		return nil, err
+	if _, err := os.Stat(".env"); err == nil {
+		err := godotenv.Load()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	cfg := &Config{}
