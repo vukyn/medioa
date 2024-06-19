@@ -46,15 +46,15 @@ build-server:
 	CGO_ENABLED=$(CGO_ENABLED) go build $(BUILD_TAG_FLAG) -o $(SERVER_PATH) ./cmd
 
 up:
+	docker compose -p $(PROJECT_NAME) $(DOCKER_COMPOSE_FILES) --env-file $(ENV_FILE) up -d
 	@printf $(COLOR) "Server started: http://localhost:$(APP_PORT)"
 	@printf $(COLOR) "Go to homepage: http://localhost:$(APP_PORT)/index"
 	@printf $(COLOR) "Go to swagger: http://localhost:$(APP_PORT)/swagger/index.html"
-	docker compose -p $(PROJECT_NAME) $(DOCKER_COMPOSE_FILES) --env-file $(ENV_FILE) up -d
 
 down:
-	@printf $(COLOR) "Server stopped and remove all container"
 	docker compose -p $(PROJECT_NAME) $(DOCKER_COMPOSE_FILES) --env-file $(ENV_FILE) down
+	@printf $(COLOR) "Server stopped and remove all container"
 
 stop:
-	@printf $(COLOR) "Server stopped"
 	docker compose -p $(PROJECT_NAME) $(DOCKER_COMPOSE_FILES) --env-file $(ENV_FILE) stop
+	@printf $(COLOR) "Server stopped"

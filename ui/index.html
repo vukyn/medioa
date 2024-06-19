@@ -209,6 +209,10 @@
 					contentType: false,
 					processData: false,
 					success: function (response) {
+						if (response.error) {
+							showError(`${response.error.code}: ${response.error.message}`);
+							return;
+						}
 						showSuccess("File uploaded successfully.");
 						console.log("API get download link:", response.data.url);
 						$.ajax({
@@ -264,13 +268,7 @@
 			});
 
 			function getFileName(fileName) {
-				if (navigator.platform.indexOf("Win") !== -1) {
-					// Windows
-					fileName = fileName.split("\\").pop();
-				} else if (navigator.platform.indexOf("Mac") !== -1) {
-					// Mac
-					fileName = fileName.split("/").pop();
-				}
+				fileName = fileName.split("\\").pop();
 				return fileName;
 			}
 			function saveFileToLocalStorage(fileName, downloadApi, downloadLink, uploadedAt) {
@@ -324,7 +322,7 @@
 					.last()
 					.click(function () {
 						var url = $(this).data("url");
-						copyClipboard(url)
+						copyClipboard(url);
 					});
 
 				$(".refresh-row-btn")
