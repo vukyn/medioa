@@ -120,7 +120,8 @@
 
 			function startSession() {
 				$.ajax({
-					url: "/ws/start",
+					// url: "ws/start",
+					url: "https://medioa.fly.dev/ws/start",
 					type: "GET",
 					success: function (data) {
 						sessionId = data.id;
@@ -135,7 +136,11 @@
 
 			function connectWebSocket(id) {
 				// Establish WebSocket connection
-				socket = new WebSocket("ws://127.0.0.1:8080/ws/" + id);
+				// socket = new WebSocket("ws://127.0.0.1:8080/ws/" + id);
+				socket = new WebSocket("wss://medioa.fly.dev/ws/" + id);
+				if (!socket) {
+					return;
+				}
 
 				socket.onopen = function () {
 					showNotificationWS("Medioa connected");
@@ -214,7 +219,6 @@
 							return;
 						}
 						showSuccess("File uploaded successfully.");
-						console.log("API get download link:", response.data.url);
 						$.ajax({
 							url: response.data.url,
 							type: "GET",
@@ -223,7 +227,6 @@
 								var actualDownloadUrl = downloadResponse.data.url;
 								var fileName = getFileName($("#fileInput").val());
 								var uploadedAt = new Date().toLocaleString();
-								console.log("Actual download link:", actualDownloadUrl);
 
 								// Save file info to local storage
 								saveFileToLocalStorage(fileName, apiDownloadUrl, actualDownloadUrl, uploadedAt);
