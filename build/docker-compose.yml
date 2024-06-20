@@ -7,7 +7,7 @@ services:
         #   context: .
         #   dockerfile: Dockerfile
         ports:
-            - "${APP_PORT}:${APP_PORT}"
+            - "${PORT}:${PORT}"
         depends_on:
             - mongo
         environment:
@@ -15,7 +15,7 @@ services:
             - VERSION=${VERSION}
             - ENVIRONMENT=local
             - PORT=${PORT}
-            - HOST=http://localhost:${APP_PORT}
+            - HOST=http://localhost:${PORT}
             - LOG_MODE=json
             - LOG_LEVEL=info
             - CORS_ALLOW_ORIGINS=*

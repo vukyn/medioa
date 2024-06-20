@@ -76,7 +76,7 @@ func (s *Server) Start(ctx context.Context) {
 	// socket
 	s.initSocket()
 
-	port := s.cfg.App.Port
+	port := ":" + s.cfg.App.Port
 	log.Info("started api successfully with port: %v", port)
 
 	go func() {
@@ -159,6 +159,10 @@ func initBlob(_ context.Context, cfg *config.Config) (*models.Blob, error) {
 	}
 
 	service, err := service.NewClientWithSharedKeyCredential(host, credential, nil)
+	if err != nil {
+		log.Error("service.NewClientWithSharedKeyCredential", err)
+		return nil, err
+	}
 
 	return &models.Blob{
 		Container:  container,

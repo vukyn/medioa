@@ -34,8 +34,8 @@ COPY --from=builder /app/ui/index.html /ui/index.html
 # Copy the CA certificates from the intermediate certs stage
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# Expose port 5001 to the outside world
-EXPOSE 5001
+# Expose port 8080 to the outside world
+EXPOSE 8080
 
 # Command to run the executable
 ENTRYPOINT ["/app/main"]
