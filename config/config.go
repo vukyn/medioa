@@ -25,6 +25,7 @@ type Config struct {
 	Storage StorageConfig
 	Cors    CorsConfig
 	Secret  SecretConfig
+	Upload  UploadConfig
 }
 
 type AppConfig struct {
@@ -66,6 +67,10 @@ type SecretConfig struct {
 	SecretKey string
 }
 
+type UploadConfig struct {
+	MaxSizeMB int64
+}
+
 func Load() (*Config, error) {
 	if _, err := os.Stat(".env"); err == nil {
 		err := godotenv.Load()
@@ -83,6 +88,7 @@ func Load() (*Config, error) {
 	parseCorsConfig(cfg)
 	parseAzAdConfig(cfg)
 	parseSecretConfig(cfg)
+	parseUploadConfig(cfg)
 	validation(cfg)
 
 	return cfg, nil
@@ -134,6 +140,11 @@ func parseSecretConfig(cfg *Config) {
 	if secretKey != "" {
 		cfg.Secret.SecretKey = string(crypto.Md5Encrypt([]byte(secretKey)))
 	}
+}
+
+func parseUploadConfig(cfg *Config) {
+	maxSizeMB, _ := strconv.ParseInt(os.Getenv("UPLOAD_MAX_SIZE_MB"), 10, 64)
+	cfg.Upload.MaxSizeMB = maxSizeMB
 }
 
 func validation(cfg *Config) error {
@@ -212,6 +223,10 @@ func validation(cfg *Config) error {
 
 	if cfg.Secret.SecretKey == "" {
 		return fmt.Errorf("secret key is required")
+	}
+
+	if cfg.Upload.MaxSizeMB <= 0 {
+		return fmt.Errorf("upload max size mb is invalid")
 	}
 
 	return nil

@@ -1,13 +1,15 @@
 package handler
 
 import (
+	"fmt"
 	"medioa/config"
 	"medioa/constants"
+	"net/http"
 
 	"medioa/internal/storage/models"
 	"medioa/internal/storage/usecase"
 	commonModel "medioa/models"
-	"medioa/pkg/http"
+	"medioa/pkg/xhttp"
 
 	"github.com/gin-gonic/gin"
 )
@@ -50,11 +52,18 @@ func (h Handler) MapRoutes(group *gin.RouterGroup) {
 //	@Success		201			{object}	models.UploadResponse
 //	@Router			/storage/upload [post]
 func (h Handler) Upload(ctx *gin.Context) {
+	maxSize := h.cfg.Upload.MaxSizeMB
+	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, maxSize<<20)
+
 	id := ctx.Query("id")
 	fileName := ctx.PostForm("file_name")
 	file, err := ctx.FormFile("chunk")
 	if err != nil {
-		http.BadRequest(ctx, err)
+		if err.Error() == "multipart: NextPart: http: request body too large" {
+			xhttp.BadRequest(ctx, fmt.Errorf("file size too large (max: %dMB)", maxSize))
+		} else {
+			xhttp.BadRequest(ctx, err)
+		}
 		return
 	}
 	userId := int64(1)
@@ -64,11 +73,11 @@ func (h Handler) Upload(ctx *gin.Context) {
 		FileName:  fileName,
 	})
 	if err != nil {
-		http.Internal(ctx, err)
+		xhttp.Internal(ctx, err)
 		return
 	}
 
-	http.Created(ctx, res)
+	xhttp.Created(ctx, res)
 }
 
 // Download godoc
@@ -92,11 +101,11 @@ func (h Handler) Download(ctx *gin.Context) {
 		Token:  token,
 	})
 	if err != nil {
-		http.Internal(ctx, err)
+		xhttp.Internal(ctx, err)
 		return
 	}
 
-	http.Ok(ctx, res)
+	xhttp.Ok(ctx, res)
 }
 
 // UploadWithSecret godoc
@@ -119,7 +128,7 @@ func (h Handler) UploadWithSecret(ctx *gin.Context) {
 	fileName := ctx.PostForm("filename")
 	file, err := ctx.FormFile("chunk")
 	if err != nil {
-		http.BadRequest(ctx, err)
+		xhttp.BadRequest(ctx, err)
 		return
 	}
 
@@ -131,11 +140,11 @@ func (h Handler) UploadWithSecret(ctx *gin.Context) {
 		FileName:  fileName,
 	})
 	if err != nil {
-		http.Internal(ctx, err)
+		xhttp.Internal(ctx, err)
 		return
 	}
 
-	http.Created(ctx, res)
+	xhttp.Created(ctx, res)
 }
 
 // DownloadWithSecret godoc
@@ -162,11 +171,11 @@ func (h Handler) DownloadWithSecret(ctx *gin.Context) {
 		Secret: secret,
 	})
 	if err != nil {
-		http.Internal(ctx, err)
+		xhttp.Internal(ctx, err)
 		return
 	}
 
-	http.Ok(ctx, res)
+	xhttp.Ok(ctx, res)
 }
 
 // CreateSecret godoc
@@ -184,16 +193,16 @@ func (h Handler) CreateSecret(ctx *gin.Context) {
 	userId := int64(1)
 	req := &models.CreateSecretRequest{}
 	if err := ctx.ShouldBindJSON(req); err != nil {
-		http.BadRequest(ctx, err)
+		xhttp.BadRequest(ctx, err)
 		return
 	}
 	res, err := h.usecase.CreateSecret(ctx, userId, req)
 	if err != nil {
-		http.Internal(ctx, err)
+		xhttp.Internal(ctx, err)
 		return
 	}
 
-	http.Created(ctx, res)
+	xhttp.Created(ctx, res)
 }
 
 // RetrieveSecret godoc
@@ -211,16 +220,16 @@ func (h Handler) RetrieveSecret(ctx *gin.Context) {
 	userId := int64(1)
 	req := &models.RetrieveSecretRequest{}
 	if err := ctx.ShouldBindJSON(req); err != nil {
-		http.BadRequest(ctx, err)
+		xhttp.BadRequest(ctx, err)
 		return
 	}
 	res, err := h.usecase.RetrieveSecret(ctx, userId, req)
 	if err != nil {
-		http.Internal(ctx, err)
+		xhttp.Internal(ctx, err)
 		return
 	}
 
-	http.Ok(ctx, res)
+	xhttp.Ok(ctx, res)
 }
 
 // ResetPinCode godoc
@@ -238,14 +247,14 @@ func (h Handler) ResetPinCode(ctx *gin.Context) {
 	userId := int64(1)
 	req := &models.ResetPinCodeRequest{}
 	if err := ctx.ShouldBindJSON(req); err != nil {
-		http.BadRequest(ctx, err)
+		xhttp.BadRequest(ctx, err)
 		return
 	}
 	res, err := h.usecase.ResetPinCode(ctx, userId, req)
 	if err != nil {
-		http.BadRequest(ctx, err)
+		xhttp.BadRequest(ctx, err)
 		return
 	}
 
-	http.Ok(ctx, res)
+	xhttp.Ok(ctx, res)
 }

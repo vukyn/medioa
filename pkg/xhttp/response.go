@@ -1,4 +1,4 @@
-package http
+package xhttp
 
 import (
 	"github.com/gin-gonic/gin"
