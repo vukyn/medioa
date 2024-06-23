@@ -48,8 +48,9 @@ definitions:
     properties:
       ext:
         type: string
+      file_id:
+        type: string
       file_name:
-        description: review to remove later
         type: string
       token:
         type: string
@@ -71,9 +72,9 @@ paths:
       - application/json
       description: Download media file
       parameters:
-      - description: file name
+      - description: file id
         in: path
-        name: file_name
+        name: file_id
         required: true
         type: string
       - description: token
@@ -123,9 +124,9 @@ paths:
       - application/json
       description: Download media file
       parameters:
-      - description: file name
+      - description: file id
         in: path
-        name: file_name
+        name: file_id
         required: true
         type: string
       - description: token
@@ -216,6 +217,10 @@ paths:
         name: chunk
         required: true
         type: file
+      - description: file name
+        in: formData
+        name: filename
+        type: string
       produces:
       - application/json
       responses:
@@ -243,6 +248,10 @@ paths:
         name: chunk
         required: true
         type: file
+      - description: file name
+        in: formData
+        name: file_name
+        type: string
       produces:
       - application/json
       responses:

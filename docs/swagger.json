@@ -33,8 +33,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "file name",
-                        "name": "file_name",
+                        "description": "file id",
+                        "name": "file_id",
                         "in": "path",
                         "required": true
                     },
@@ -116,8 +116,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "file name",
-                        "name": "file_name",
+                        "description": "file id",
+                        "name": "file_id",
                         "in": "path",
                         "required": true
                     },
@@ -259,6 +259,12 @@
                         "name": "chunk",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "file name",
+                        "name": "filename",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -302,6 +308,12 @@
                         "name": "chunk",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "file name",
+                        "name": "file_name",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -391,8 +403,10 @@
                 "ext": {
                     "type": "string"
                 },
+                "file_id": {
+                    "type": "string"
+                },
                 "file_name": {
-                    "description": "review to remove later",
                     "type": "string"
                 },
                 "token": {

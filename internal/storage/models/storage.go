@@ -5,6 +5,7 @@ import "mime/multipart"
 type UploadRequest struct {
 	SessionId string                `json:"id"`
 	File      *multipart.FileHeader `json:"file"`
+	FileName  string                `json:"filename"`
 }
 
 func (r *UploadRequest) ToBlobRequest() *UploadBlobRequest {
@@ -18,6 +19,7 @@ type UploadWithSecretRequest struct {
 	SessionId string                `json:"id"`
 	Secret    string                `json:"secret"`
 	File      *multipart.FileHeader `json:"file"`
+	FileName  string                `json:"filename"`
 }
 
 func (r *UploadWithSecretRequest) ToBlobRequest() *UploadBlobRequest {
@@ -31,18 +33,19 @@ type UploadResponse struct {
 	Url      string `json:"url"`
 	Token    string `json:"token"`
 	Ext      string `json:"ext"`
-	FileName string `json:"file_name"` // review to remove later
+	FileId   string `json:"file_id"`
+	FileName string `json:"file_name"`
 }
 
 type DownloadRequest struct {
-	FileName string `json:"file_name"`
-	Token    string `json:"token"`
+	FileId string `json:"file_id"`
+	Token  string `json:"token"`
 }
 
 type DownloadWithSecretRequest struct {
-	FileName string `json:"file_name"`
-	Secret   string `json:"secret"`
-	Token    string `json:"token"`
+	FileId string `json:"file_id"`
+	Secret string `json:"secret"`
+	Token  string `json:"token"`
 }
 
 type DownloadResponse struct {

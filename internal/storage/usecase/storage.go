@@ -7,6 +7,7 @@ import (
 	"medioa/internal/storage/models"
 	"medioa/pkg/log"
 	"mime/multipart"
+	"path"
 	"strings"
 
 	"github.com/google/uuid"
@@ -28,16 +29,23 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *models.Uploa
 		return nil, err
 	}
 
+	fileName := params.FileName
+	if fileName == "" {
+		ext := path.Ext(params.File.Filename)
+		fileName = strings.ReplaceAll(params.File.Filename, ext, "")
+	}
+
 	// Save to database
-	_id := uuid.New().String()
-	fileName := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD, ":file_name", _id)
-	downloadUrl := fmt.Sprintf("%s/api/v1%s?token=%s", u.cfg.App.Host, fileName, file.Token)
+	fileId := uuid.New().String()
+	filePath := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD, ":file_id", fileId)
+	downloadUrl := fmt.Sprintf("%s/api/v1%s?token=%s", u.cfg.App.Host, filePath, file.Token)
 	if _, err := u.storageSv.Create(ctx, userId, &models.SaveRequest{
-		UUID:        _id,
+		UUID:        fileId,
 		Type:        mimeType,
 		Token:       file.Token,
 		DownloadUrl: downloadUrl,
 		Ext:         file.Ext,
+		FileName:    fileName,
 	}); err != nil {
 		log.Error("service.storageSv.Create", err)
 		return nil, err
@@ -45,9 +53,10 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *models.Uploa
 
 	return &models.UploadResponse{
 		Url:      downloadUrl,
-		FileName: _id,
+		FileId:   fileId,
 		Token:    file.Token,
 		Ext:      file.Ext,
+		FileName: fileName,
 	}, nil
 }
 
@@ -66,16 +75,22 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *mo
 		return nil, err
 	}
 
+	fileName := params.FileName
+	if fileName == "" {
+		fileName = params.File.Filename
+	}
+
 	// Save to database
-	_id := uuid.New().String()
-	fileName := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD, ":file_name", _id)
-	downloadUrl := fmt.Sprintf("%s/api/v1%s?token=%s", u.cfg.App.Host, fileName, file.Token)
+	fileId := uuid.New().String()
+	filePath := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD, ":file_id", fileId)
+	downloadUrl := fmt.Sprintf("%s/api/v1%s?token=%s", u.cfg.App.Host, filePath, file.Token)
 	if _, err := u.storageSv.Create(ctx, userId, &models.SaveRequest{
-		UUID:        _id,
+		UUID:        fileId,
 		Type:        mimeType,
 		Token:       file.Token,
 		DownloadUrl: downloadUrl,
 		Ext:         file.Ext,
+		FileName:    fileName,
 	}); err != nil {
 		log.Error("service.storageSv.Create", err)
 		return nil, err
@@ -83,9 +98,10 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *mo
 
 	return &models.UploadResponse{
 		Url:      downloadUrl,
-		FileName: _id,
+		FileId:   fileId,
 		Token:    file.Token,
 		Ext:      file.Ext,
+		FileName: fileName,
 	}, nil
 }
 
@@ -93,8 +109,8 @@ func (u *usecase) Download(ctx context.Context, userId int64, params *models.Dow
 	log := log.New("service", "Download")
 
 	// Validation
-	if params.FileName == "" {
-		return nil, fmt.Errorf("file name is required")
+	if params.FileId == "" {
+		return nil, fmt.Errorf("file id is required")
 	}
 
 	if params.Token == "" {
@@ -104,7 +120,7 @@ func (u *usecase) Download(ctx context.Context, userId int64, params *models.Dow
 
 	// Get file info
 	file, err := u.storageSv.GetOne(ctx, &models.RequestParams{
-		UUID:  params.FileName,
+		UUID:  params.FileId,
 		Token: params.Token,
 	})
 	if err != nil {
@@ -120,12 +136,12 @@ func (u *usecase) Download(ctx context.Context, userId int64, params *models.Dow
 		return nil, fmt.Errorf("permission denied")
 	}
 
-	fileName := file.Token
+	downloadFileName := file.Token
 	if file.Ext != "" {
-		fileName += file.Ext
+		downloadFileName += file.Ext
 	}
 	sas, err := u.storageSv.DownloadSAS(ctx, &models.DownloadSASRequest{
-		FileName: fileName,
+		FileName: downloadFileName,
 	})
 	if err != nil {
 		log.Error("service.storageSv.DownloadSAS", err)
@@ -141,8 +157,8 @@ func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *
 	log := log.New("service", "DownloadWithSecret")
 
 	// Validation
-	if params.FileName == "" {
-		return nil, fmt.Errorf("file name is required")
+	if params.FileId == "" {
+		return nil, fmt.Errorf("file id is required")
 	}
 
 	if params.Token == "" {
@@ -152,7 +168,7 @@ func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *
 
 	// Get file info
 	file, err := u.storageSv.GetOne(ctx, &models.RequestParams{
-		UUID:  params.FileName,
+		UUID:  params.FileId,
 		Token: params.Token,
 	})
 	if err != nil {
@@ -168,12 +184,12 @@ func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *
 		return nil, fmt.Errorf("permission denied")
 	}
 
-	fileName := file.Token
+	downloadFileName := file.Token
 	if file.Ext != "" {
-		fileName += file.Ext
+		downloadFileName += file.Ext
 	}
 	sas, err := u.storageSv.DownloadSAS(ctx, &models.DownloadSASRequest{
-		FileName: fileName,
+		FileName: downloadFileName,
 	})
 	if err != nil {
 		log.Error("service.storageSv.DownloadSAS", err)

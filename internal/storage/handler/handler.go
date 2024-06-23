@@ -44,22 +44,24 @@ func (h Handler) MapRoutes(group *gin.RouterGroup) {
 //	@Tags			Storage
 //	@Accept			mpfd
 //	@Produce		json
-//	@Param			id		query		string	false	"session id"
-//	@Param			chunk	formData	file	true	"binary file"
-//	@Success		201		{object}	models.UploadResponse
+//	@Param			id			query		string	false	"session id"
+//	@Param			chunk		formData	file	true	"binary file"
+//	@Param			file_name	formData	string	false	"file name"
+//	@Success		201			{object}	models.UploadResponse
 //	@Router			/storage/upload [post]
 func (h Handler) Upload(ctx *gin.Context) {
 	id := ctx.Query("id")
+	fileName := ctx.PostForm("file_name")
 	file, err := ctx.FormFile("chunk")
 	if err != nil {
 		http.BadRequest(ctx, err)
 		return
 	}
-
 	userId := int64(1)
 	res, err := h.usecase.Upload(ctx, userId, &models.UploadRequest{
 		SessionId: id,
 		File:      file,
+		FileName:  fileName,
 	})
 	if err != nil {
 		http.Internal(ctx, err)
@@ -77,17 +79,17 @@ func (h Handler) Upload(ctx *gin.Context) {
 //	@Tags			Storage
 //	@Accept			json
 //	@Produce		json
-//	@Param			file_name	path		string	true	"file name"
-//	@Param			token		query		string	true	"token"
-//	@Success		200			{object}	models.DownloadResponse
+//	@Param			file_id	path		string	true	"file id"
+//	@Param			token	query		string	true	"token"
+//	@Success		200		{object}	models.DownloadResponse
 //	@Router			/storage/download/{file_name} [get]
 func (h Handler) Download(ctx *gin.Context) {
 	userId := int64(1)
-	fileName := ctx.Param("file_name")
+	fileId := ctx.Param("file_id")
 	token := ctx.Query("token")
 	res, err := h.usecase.Download(ctx, userId, &models.DownloadRequest{
-		FileName: fileName,
-		Token:    token,
+		FileId: fileId,
+		Token:  token,
 	})
 	if err != nil {
 		http.Internal(ctx, err)
@@ -105,14 +107,16 @@ func (h Handler) Download(ctx *gin.Context) {
 //	@Tags			Storage
 //	@Accept			mpfd
 //	@Produce		json
-//	@Param			id		query		string	false	"session id"
-//	@Param			secret	query		string	true	"secret"
-//	@Param			chunk	formData	file	true	"binary file"
-//	@Success		201		{object}	models.UploadResponse
+//	@Param			id			query		string	false	"session id"
+//	@Param			secret		query		string	true	"secret"
+//	@Param			chunk		formData	file	true	"binary file"
+//	@Param			filename	formData	string	false	"file name"
+//	@Success		201			{object}	models.UploadResponse
 //	@Router			/storage/secret/upload [post]
 func (h Handler) UploadWithSecret(ctx *gin.Context) {
 	id := ctx.Query("id")
 	secret := ctx.Query("secret")
+	fileName := ctx.PostForm("filename")
 	file, err := ctx.FormFile("chunk")
 	if err != nil {
 		http.BadRequest(ctx, err)
@@ -124,6 +128,7 @@ func (h Handler) UploadWithSecret(ctx *gin.Context) {
 		SessionId: id,
 		Secret:    secret,
 		File:      file,
+		FileName:  fileName,
 	})
 	if err != nil {
 		http.Internal(ctx, err)
@@ -141,20 +146,20 @@ func (h Handler) UploadWithSecret(ctx *gin.Context) {
 //	@Tags			Storage
 //	@Accept			json
 //	@Produce		json
-//	@Param			file_name	path		string	true	"file name"
-//	@Param			token		query		string	true	"token"
-//	@Param			secret		query		string	true	"secret"
-//	@Success		200			{object}	models.DownloadResponse
+//	@Param			file_id	path		string	true	"file id"
+//	@Param			token	query		string	true	"token"
+//	@Param			secret	query		string	true	"secret"
+//	@Success		200		{object}	models.DownloadResponse
 //	@Router			/storage/secret/download/{file_name} [get]
 func (h Handler) DownloadWithSecret(ctx *gin.Context) {
 	userId := int64(1)
-	fileName := ctx.Param("file_name")
+	fileId := ctx.Param("file_id")
 	token := ctx.Query("token")
 	secret := ctx.Query("secret")
 	res, err := h.usecase.DownloadWithSecret(ctx, userId, &models.DownloadWithSecretRequest{
-		FileName: fileName,
-		Token:    token,
-		Secret:   secret,
+		FileId: fileId,
+		Token:  token,
+		Secret: secret,
 	})
 	if err != nil {
 		http.Internal(ctx, err)

@@ -40,8 +40,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "file name",
-                        "name": "file_name",
+                        "description": "file id",
+                        "name": "file_id",
                         "in": "path",
                         "required": true
                     },
@@ -123,8 +123,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "file name",
-                        "name": "file_name",
+                        "description": "file id",
+                        "name": "file_id",
                         "in": "path",
                         "required": true
                     },
@@ -266,6 +266,12 @@ const docTemplate = `{
                         "name": "chunk",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "file name",
+                        "name": "filename",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -309,6 +315,12 @@ const docTemplate = `{
                         "name": "chunk",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "file name",
+                        "name": "file_name",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -398,8 +410,10 @@ const docTemplate = `{
                 "ext": {
                     "type": "string"
                 },
+                "file_id": {
+                    "type": "string"
+                },
                 "file_name": {
-                    "description": "review to remove later",
                     "type": "string"
                 },
                 "token": {
