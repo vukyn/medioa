@@ -59,6 +59,7 @@ type Response struct {
 	Token       string    `json:"token"`
 	LifeTime    int       `json:"life_time"`
 	FileName    string    `json:"file_name"`
+	FileSize    int64     `json:"file_size"`
 	Ext         string    `json:"ext"`
 	CreatedBy   int64     `json:"created_by"`
 	CreatedAt   time.Time `json:"created_at"`
@@ -71,6 +72,7 @@ type SaveRequest struct {
 	Type        string
 	Token       string
 	FileName    string
+	FileSize    int64
 	Ext         string
 	LifeTime    int
 	CreatedBy   int64

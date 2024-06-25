@@ -35,6 +35,7 @@ type UploadResponse struct {
 	Ext      string `json:"ext"`
 	FileId   string `json:"file_id"`
 	FileName string `json:"file_name"`
+	FileSize int64  `json:"file_size"`
 }
 
 type DownloadRequest struct {

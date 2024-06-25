@@ -416,6 +416,9 @@ const docTemplate = `{
                 "file_name": {
                     "type": "string"
                 },
+                "file_size": {
+                    "type": "integer"
+                },
                 "token": {
                     "type": "string"
                 },

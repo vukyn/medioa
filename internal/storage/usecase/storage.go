@@ -46,6 +46,7 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *models.Uploa
 		DownloadUrl: downloadUrl,
 		Ext:         file.Ext,
 		FileName:    fileName,
+		FileSize:    params.File.Size,
 	}); err != nil {
 		log.Error("service.storageSv.Create", err)
 		return nil, err
@@ -57,6 +58,7 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *models.Uploa
 		Token:    file.Token,
 		Ext:      file.Ext,
 		FileName: fileName,
+		FileSize: params.File.Size,
 	}, nil
 }
 
@@ -91,6 +93,7 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *mo
 		DownloadUrl: downloadUrl,
 		Ext:         file.Ext,
 		FileName:    fileName,
+		FileSize:    params.File.Size,
 	}); err != nil {
 		log.Error("service.storageSv.Create", err)
 		return nil, err
@@ -102,6 +105,7 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *mo
 		Token:    file.Token,
 		Ext:      file.Ext,
 		FileName: fileName,
+		FileSize: params.File.Size,
 	}, nil
 }
 

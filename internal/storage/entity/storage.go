@@ -18,6 +18,7 @@ type Storage struct {
 	Token       string    `gorm:"column:token;default:(-)" bson:"token"`
 	LifeTime    int       `gorm:"column:life_time;default:(-)" bson:"life_time"`
 	FileName    string    `gorm:"column:file_name" bson:"file_name"`
+	FileSize    int64     `gorm:"column:file_size" bson:"file_size"`
 	Ext         string    `gorm:"column:ext" bson:"ext"`
 	CreatedBy   int64     `gorm:"column:created_by" bson:"created_by"`
 	CreatedAt   time.Time `gorm:"autoCreateTime" bson:"created_at"`
@@ -35,6 +36,7 @@ func (e *Storage) Export() *models.Response {
 		Token:       e.Token,
 		LifeTime:    e.LifeTime,
 		FileName:    e.FileName,
+		FileSize:    e.FileSize,
 		Ext:         e.Ext,
 		CreatedBy:   e.CreatedBy,
 		CreatedAt:   e.CreatedAt,
@@ -58,6 +60,7 @@ func (e *Storage) ParseFromSaveRequest(req *models.SaveRequest) {
 		e.Token = req.Token
 		e.LifeTime = req.LifeTime
 		e.FileName = req.FileName
+		e.FileSize = req.FileSize
 		e.Ext = req.Ext
 		e.CreatedBy = req.CreatedBy
 		e.CreatedAt = req.CreatedAt
@@ -116,6 +119,9 @@ func (e *Storage) ToBson() bson.D {
 	}
 	if e.FileName != "" {
 		d = append(d, bson.E{Key: "file_name", Value: e.FileName})
+	}
+	if e.FileSize > 0 {
+		d = append(d, bson.E{Key: "file_size", Value: e.FileSize})
 	}
 	if e.Ext != "" {
 		d = append(d, bson.E{Key: "ext", Value: e.Ext})
