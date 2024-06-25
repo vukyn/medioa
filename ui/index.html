@@ -82,6 +82,9 @@
 			.tooltip-inner {
 				font-size: 14px; /* Adjust tooltip font size */
 			}
+			.text-danger {
+				color: #dc3545;
+			}
 		</style>
 	</head>
 	<body>
@@ -101,6 +104,82 @@
 				<div id="progressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%">0%</div>
 			</div>
 			<!-- upload section -->
+
+			<!-- secret section -->
+			<div>
+				<button
+					class="btn btn-link mt-3"
+					type="button"
+					data-toggle="collapse"
+					data-target="#secretCollapse"
+					aria-expanded="false"
+					aria-controls="secretCollapse"
+				>
+					Secret
+				</button>
+				<div class="collapse" id="secretCollapse">
+					<div class="card card-body">
+						<form id="secretForm">
+							<div class="form-group">
+								<label for="usernameInput">Username<span class="text-danger">*</span> :</label>
+								<input type="text" class="form-control" id="usernameInput" placeholder="Enter username" required />
+							</div>
+							<div class="form-group">
+								<label for="passwordInput">Password<span class="text-danger">*</span> :</label>
+								<input type="password" class="form-control" id="passwordInput" placeholder="Enter password" required />
+							</div>
+							<div class="form-group">
+								<label for="pinCodeInput">PIN Code<span class="text-danger">*</span> :</label>
+								<input
+									id="pinCodeInput"
+									class="form-control"
+									type="password"
+									pattern="[0-9]{4}"
+									maxlength="4"
+									inputmode="numeric"
+									placeholder="Enter PIN code"
+									title="PIN code must be 4 digits"
+									required
+								/>
+							</div>
+							<div class="form-group">
+								<label for="masterKeyInput">Master Key (optional):</label>
+								<input type="text" class="form-control" id="masterKeyInput" placeholder="Enter master key" />
+							</div>
+							<button type="submit" class="btn btn-primary">Save</button>
+						</form>
+					</div>
+				</div>
+			</div>
+			<!-- secret section -->
+
+			<!-- secret model -->
+			<div class="modal fade" id="tokenModal" tabindex="-1" role="dialog" aria-labelledby="tokenModalLabel" aria-hidden="true">
+				<div class="modal-dialog modal-dialog-centered" role="document">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title" id="tokenModalLabel">Secret Token Created</h5>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true">&times;</span>
+							</button>
+						</div>
+						<div class="modal-body">
+							<p>Please keep your token private.</p>
+							<div class="input-group">
+								<input type="text" class="form-control" id="tokenInput" readonly />
+								<div class="input-group-append">
+									<button class="btn btn-outline-secondary" type="button" id="copyTokenButton">
+										<i class="fas fa-copy"></i>
+									</button>
+								</div>
+							</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+						</div>
+					</div>
+				</div>
+			</div>
 
 			<!-- config section -->
 			<div>
@@ -151,6 +230,7 @@
 								<th>File Name</th>
 								<th>Download</th>
 								<th>Uploaded At</th>
+								<th>Secret</th>
 								<th>Actions</th>
 							</tr>
 						</thead>
@@ -256,13 +336,20 @@
 				var formData = new FormData();
 				formData.append("chunk", fileInput.files[0]);
 				formData.append("file_name", fileName);
-				formData.append("secret", secret);
 
 				var endpoint;
 				if (socket === undefined || sessionId === "") {
-					endpoint = "/api/v1/storage/upload";
+					if (secret === "") {
+						endpoint = "/api/v1/storage/upload";
+					} else {
+						endpoint = `/api/v1/storage/secret/upload?secret=${secret}`;
+					}
 				} else {
-					endpoint = "/api/v1/storage/upload?id=" + sessionId;
+					if (secret === "") {
+						endpoint = `/api/v1/storage/upload?id=${sessionId}`;
+					} else {
+						endpoint = `/api/v1/storage/upload?id=${sessionId}&secret=${secret}`;
+					}
 				}
 
 				$.ajax({
@@ -277,6 +364,7 @@
 							return;
 						}
 						showSuccess("File uploaded successfully.");
+						var fileId = response.data.file_id;
 						$.ajax({
 							url: response.data.url,
 							type: "GET",
@@ -287,10 +375,11 @@
 								var uploadedAt = new Date().toLocaleString();
 
 								// Save file info to local storage
-								saveFileToLocalStorage(fileName, apiDownloadUrl, actualDownloadUrl, uploadedAt);
+								var hasSecret = secret !== "";
+								saveFileToLocalStorage(fileId, fileName, apiDownloadUrl, actualDownloadUrl, uploadedAt, hasSecret);
 
 								// Update the table
-								addFileToTable(fileName, apiDownloadUrl, actualDownloadUrl, uploadedAt);
+								addFileToTable(fileId, fileName, apiDownloadUrl, actualDownloadUrl, uploadedAt, hasSecret);
 
 								$("#resetButton").trigger("click");
 								$("#downloadLink").attr("href", actualDownloadUrl);
@@ -307,6 +396,52 @@
 				});
 			});
 
+			$("#secretForm").submit(function (event) {
+				event.preventDefault();
+
+				var username = $("#usernameInput").val().trim();
+				var password = $("#passwordInput").val().trim();
+				var pinCode = $("#pinCodeInput").val().trim();
+				var masterKey = $("#masterKeyInput").val().trim();
+
+				// Validate the PIN code format
+				if (!/^\d{4}$/.test(pinCode)) {
+					showError("PIN Code must be 4 digits.");
+					return;
+				}
+
+				var formData = {
+					username: username,
+					password: password,
+					pin_code: pinCode,
+					master_key: masterKey,
+				};
+
+				$.ajax({
+					url: "/api/v1/storage/secret",
+					type: "POST",
+					contentType: "application/json",
+					data: JSON.stringify(formData),
+					success: function (response) {
+						if (response.error) {
+							showError(`${response.error.code}: ${response.error.message}`);
+							return;
+						}
+
+						showSuccess("Secret token created successfully.");
+						$("#secretForm")[0].reset();
+						$("#secretCollapse").collapse("hide");
+
+						var token = response.data.access_token;
+						$("#tokenInput").val(token);
+						$("#tokenModal").modal("show");
+					},
+					error: function () {
+						showError("An error occurred while creating new secret token");
+					},
+				});
+			});
+
 			$("#resetButton").click(function () {
 				$("#uploadForm")[0].reset();
 				$('label[for="fileInput"]').text("Click to choose a file");
@@ -316,6 +451,7 @@
 				$("#downloadLink").attr("href", "");
 				$("#fileNameInput").val("");
 				$("#secretInput").val("");
+				$("secretForm")[0].reset();
 			});
 
 			$("#copyButton").click(function () {
@@ -330,38 +466,46 @@
 				);
 			});
 
+			// Handle copy to clipboard
+			$("#copyTokenButton").click(function () {
+				var tokenInput = $("#tokenInput");
+				tokenInput.select();
+				document.execCommand("copy");
+				showNotification("Token copied to clipboard");
+			});
+
 			function getFileName(fileName) {
 				fileName = fileName.split("\\").pop();
 				return fileName;
 			}
-			function saveFileToLocalStorage(fileName, downloadApi, downloadLink, uploadedAt) {
+			function saveFileToLocalStorage(fileId, fileName, downloadApi, downloadLink, uploadedAt, hasSecret) {
 				var files = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
-				files.push({ fileName, downloadApi, downloadLink, uploadedAt });
+				files.push({ fileId, fileName, downloadApi, downloadLink, uploadedAt, hasSecret });
 				localStorage.setItem("uploadedFiles", JSON.stringify(files));
 			}
-			function updateFileDownloadLinkFromLocalStorage(fileName, downloadLink) {
+			function updateFileDownloadLinkFromLocalStorage(fileId, downloadLink) {
 				var files = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
 				files.forEach(function (file) {
-					if (file.fileName === fileName) {
+					if (file.fileId === fileId) {
 						file.downloadLink = downloadLink;
 					}
 				});
 				localStorage.setItem("uploadedFiles", JSON.stringify(files));
 			}
-			function deleteFileFromLocalStorage(fileName) {
+			function deleteFileFromLocalStorage(fileId) {
 				var files = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
 				files = files.filter(function (file) {
-					return file.fileName !== fileName;
+					return file.fileId !== fileId;
 				});
 				localStorage.setItem("uploadedFiles", JSON.stringify(files));
 			}
 			function loadFilesFromLocalStorage() {
 				var files = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
 				files.forEach(function (file) {
-					addFileToTable(file.fileName, file.downloadApi, file.downloadLink, file.uploadedAt);
+					addFileToTable(file.fileId, file.fileName, file.downloadApi, file.downloadLink, file.uploadedAt, file.hasSecret);
 				});
 			}
-			function addFileToTable(fileName, downloadApi, downloadLink, uploadedAt) {
+			function addFileToTable(fileId, fileName, downloadApi, downloadLink, uploadedAt, hasSecret) {
 				var row = `<tr>
                     <td>${fileName}</td>
                     <td>
@@ -369,6 +513,7 @@
                     	<i class="fas fa-copy copy-url-icon" style="cursor: pointer;" data-url="${downloadLink}"></i>
                     </td>
                     <td>${uploadedAt}</td>
+					<td>${hasSecret ? "Yes" : "No"}</td>
                     <td>
 						<div class="action-buttons-container">
 							<button class="btn btn-info refresh-row-btn" data-toggle="tooltip" title="Refresh link"><i class="fas fa-sync-alt"></i></button>
@@ -392,7 +537,7 @@
 					.last()
 					.click(function () {
 						var row = $(this).closest("tr");
-						var fileName = row.find("td:first").text();
+						var fileId = row.find("td:first").text();
 
 						$.ajax({
 							url: downloadApi,
@@ -402,7 +547,7 @@
 								console.log("Actual download link:", actualDownloadUrl);
 
 								// Update download link in local storage
-								updateFileDownloadLinkFromLocalStorage(fileName, actualDownloadUrl);
+								updateFileDownloadLinkFromLocalStorage(fileId, actualDownloadUrl);
 
 								// Update the table
 								row.find("td:nth-child(2) a").attr("href", actualDownloadUrl).text("link");
@@ -422,8 +567,8 @@
 					.last()
 					.click(function () {
 						var row = $(this).closest("tr");
-						var fileName = row.find("td:first").text();
-						deleteFileFromLocalStorage(fileName);
+						var fileId = row.find("td:first").text();
+						deleteFileFromLocalStorage(fileId);
 						row.remove();
 						if ($("#filesTable tbody tr").length === 0) {
 							$("#filesTable").hide();

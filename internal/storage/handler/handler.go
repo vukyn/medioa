@@ -73,7 +73,7 @@ func (h Handler) Upload(ctx *gin.Context) {
 		FileName:  fileName,
 	})
 	if err != nil {
-		xhttp.Internal(ctx, err)
+		xhttp.BadRequest(ctx, err)
 		return
 	}
 
@@ -101,7 +101,7 @@ func (h Handler) Download(ctx *gin.Context) {
 		Token:  token,
 	})
 	if err != nil {
-		xhttp.Internal(ctx, err)
+		xhttp.BadRequest(ctx, err)
 		return
 	}
 
@@ -140,7 +140,7 @@ func (h Handler) UploadWithSecret(ctx *gin.Context) {
 		FileName:  fileName,
 	})
 	if err != nil {
-		xhttp.Internal(ctx, err)
+		xhttp.BadRequest(ctx, err)
 		return
 	}
 
@@ -171,7 +171,7 @@ func (h Handler) DownloadWithSecret(ctx *gin.Context) {
 		Secret: secret,
 	})
 	if err != nil {
-		xhttp.Internal(ctx, err)
+		xhttp.BadRequest(ctx, err)
 		return
 	}
 
@@ -198,7 +198,7 @@ func (h Handler) CreateSecret(ctx *gin.Context) {
 	}
 	res, err := h.usecase.CreateSecret(ctx, userId, req)
 	if err != nil {
-		xhttp.Internal(ctx, err)
+		xhttp.BadRequest(ctx, err)
 		return
 	}
 
@@ -225,7 +225,7 @@ func (h Handler) RetrieveSecret(ctx *gin.Context) {
 	}
 	res, err := h.usecase.RetrieveSecret(ctx, userId, req)
 	if err != nil {
-		xhttp.Internal(ctx, err)
+		xhttp.BadRequest(ctx, err)
 		return
 	}
 
