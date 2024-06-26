@@ -348,7 +348,7 @@
 					if (secret === "") {
 						endpoint = `/api/v1/storage/upload?id=${sessionId}`;
 					} else {
-						endpoint = `/api/v1/storage/upload?id=${sessionId}&secret=${secret}`;
+						endpoint = `/api/v1/storage/secret/upload?id=${sessionId}&secret=${secret}`;
 					}
 				}
 
@@ -507,6 +507,7 @@
 			}
 			function addFileToTable(fileId, fileName, downloadApi, downloadLink, uploadedAt, hasSecret) {
 				var row = `<tr>
+					<td style="display:none;">${fileId}</td>
                     <td>${fileName}</td>
                     <td>
                         <a href="${downloadLink}" target="_blank">link</a>
