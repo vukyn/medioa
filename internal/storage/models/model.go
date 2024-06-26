@@ -20,6 +20,7 @@ type RequestParams struct {
 	Token       string
 	Ext         string
 	LifeTime    int
+	SecretId    string
 	CreatedBy   int
 }
 
@@ -28,6 +29,7 @@ func (r *RequestParams) trimSpace() {
 	r.Type = strings.TrimSpace(r.Type)
 	r.Token = strings.TrimSpace(r.Token)
 	r.Ext = strings.TrimSpace(r.Ext)
+	r.SecretId = strings.TrimSpace(r.SecretId)
 }
 func (r *RequestParams) ToMap() map[string]interface{} {
 	r.trimSpace()
@@ -43,6 +45,7 @@ func (r *RequestParams) ToMap() map[string]interface{} {
 		constants.FIELD_STORAGE_TOKEN:        r.Token,
 		constants.FIELD_STORAGE_LIFE_TIME:    r.LifeTime,
 		constants.FIELD_STORAGE_EXT:          r.Ext,
+		constants.FIELD_STORAGE_SECRET_ID:    r.SecretId,
 		constants.FIELD_STORAGE_CREATED_BY:   r.CreatedBy,
 		constants.FIELD_PAGE:                 r.Page,
 		constants.FIELD_SIZE:                 r.Size,
@@ -61,6 +64,7 @@ type Response struct {
 	FileName    string    `json:"file_name"`
 	FileSize    int64     `json:"file_size"`
 	Ext         string    `json:"ext"`
+	SecretId    string    `json:"secret_id"`
 	CreatedBy   int64     `json:"created_by"`
 	CreatedAt   time.Time `json:"created_at"`
 }
@@ -74,6 +78,7 @@ type SaveRequest struct {
 	FileName    string
 	FileSize    int64
 	Ext         string
+	SecretId    string
 	LifeTime    int
 	CreatedBy   int64
 	CreatedAt   time.Time

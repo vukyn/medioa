@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"medioa/constants"
-	"medioa/internal/storage/models"
+	secretModel "medioa/internal/secret/models"
+	storageModel "medioa/internal/storage/models"
 	"medioa/pkg/log"
 	"mime/multipart"
 	"path"
@@ -14,7 +15,7 @@ import (
 	"github.com/zRedShift/mimemagic"
 )
 
-func (u *usecase) Upload(ctx context.Context, userId int64, params *models.UploadRequest) (*models.UploadResponse, error) {
+func (u *usecase) Upload(ctx context.Context, userId int64, params *storageModel.UploadRequest) (*storageModel.UploadResponse, error) {
 	log := log.New("service", "Upload")
 
 	// sniff mime type
@@ -23,9 +24,9 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *models.Uploa
 		return nil, err
 	}
 
-	file, err := u.storageSv.UploadBlob(ctx, params.ToBlobRequest())
+	file, err := u.storageSv.UploadPublicBlob(ctx, params.ToBlobRequest())
 	if err != nil {
-		log.Error("service.storageSv.UploadBlob", err)
+		log.Error("service.storageSv.UploadPublicBlob", err)
 		return nil, err
 	}
 
@@ -39,7 +40,7 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *models.Uploa
 	fileId := uuid.New().String()
 	filePath := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD, ":file_id", fileId)
 	downloadUrl := fmt.Sprintf("%s/api/v1%s?token=%s", u.cfg.App.Host, filePath, file.Token)
-	if _, err := u.storageSv.Create(ctx, userId, &models.SaveRequest{
+	if _, err := u.storageSv.Create(ctx, userId, &storageModel.SaveRequest{
 		UUID:        fileId,
 		Type:        mimeType,
 		Token:       file.Token,
@@ -52,7 +53,7 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *models.Uploa
 		return nil, err
 	}
 
-	return &models.UploadResponse{
+	return &storageModel.UploadResponse{
 		Url:      downloadUrl,
 		FileId:   fileId,
 		Token:    file.Token,
@@ -62,8 +63,19 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *models.Uploa
 	}, nil
 }
 
-func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *models.UploadWithSecretRequest) (*models.UploadResponse, error) {
+func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *storageModel.UploadWithSecretRequest) (*storageModel.UploadResponse, error) {
 	log := log.New("service", "UploadWithSecret")
+
+	secret, err := u.secretSv.GetOne(ctx, &secretModel.RequestParams{
+		AccessToken: params.Secret,
+	})
+	if err != nil {
+		log.Error("service.secretSv.GetOne", err)
+		return nil, err
+	}
+	if secret == nil {
+		return nil, fmt.Errorf("secret token is invalid")
+	}
 
 	// sniff mime type
 	mimeType, err := sniffMimeType(params.File)
@@ -71,9 +83,11 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *mo
 		return nil, err
 	}
 
-	file, err := u.storageSv.UploadBlob(ctx, params.ToBlobRequest())
+	uploadReq := params.ToBlobRequest()
+	uploadReq.SecretId = secret.UUID
+	file, err := u.storageSv.UploadPrivateBlob(ctx, uploadReq)
 	if err != nil {
-		log.Error("service.storageSv.UploadBlob", err)
+		log.Error("service.storageSv.UploadPrivateBlob", err)
 		return nil, err
 	}
 
@@ -84,9 +98,9 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *mo
 
 	// Save to database
 	fileId := uuid.New().String()
-	filePath := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD, ":file_id", fileId)
+	filePath := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD_WITH_SECRET, ":file_id", fileId)
 	downloadUrl := fmt.Sprintf("%s/api/v1%s?token=%s", u.cfg.App.Host, filePath, file.Token)
-	if _, err := u.storageSv.Create(ctx, userId, &models.SaveRequest{
+	if _, err := u.storageSv.Create(ctx, userId, &storageModel.SaveRequest{
 		UUID:        fileId,
 		Type:        mimeType,
 		Token:       file.Token,
@@ -94,12 +108,13 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *mo
 		Ext:         file.Ext,
 		FileName:    fileName,
 		FileSize:    params.File.Size,
+		SecretId:    secret.UUID,
 	}); err != nil {
 		log.Error("service.storageSv.Create", err)
 		return nil, err
 	}
 
-	return &models.UploadResponse{
+	return &storageModel.UploadResponse{
 		Url:      downloadUrl,
 		FileId:   fileId,
 		Token:    file.Token,
@@ -109,7 +124,7 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *mo
 	}, nil
 }
 
-func (u *usecase) Download(ctx context.Context, userId int64, params *models.DownloadRequest) (*models.DownloadResponse, error) {
+func (u *usecase) Download(ctx context.Context, userId int64, params *storageModel.DownloadRequest) (*storageModel.DownloadResponse, error) {
 	log := log.New("service", "Download")
 
 	// Validation
@@ -120,10 +135,9 @@ func (u *usecase) Download(ctx context.Context, userId int64, params *models.Dow
 	if params.Token == "" {
 		return nil, fmt.Errorf("token is required")
 	}
-	// End validation
 
 	// Get file info
-	file, err := u.storageSv.GetOne(ctx, &models.RequestParams{
+	file, err := u.storageSv.GetOne(ctx, &storageModel.RequestParams{
 		UUID:  params.FileId,
 		Token: params.Token,
 	})
@@ -136,15 +150,20 @@ func (u *usecase) Download(ctx context.Context, userId int64, params *models.Dow
 	}
 
 	// Check permission
+	if file.SecretId != "" {
+		return nil, fmt.Errorf("permission denied")
+	}
 	if file.CreatedBy != userId {
 		return nil, fmt.Errorf("permission denied")
 	}
+	// End validation
 
 	downloadFileName := file.Token
 	if file.Ext != "" {
 		downloadFileName += file.Ext
 	}
-	sas, err := u.storageSv.DownloadSAS(ctx, &models.DownloadSASRequest{
+	downloadFileName = path.Join("public", downloadFileName)
+	sas, err := u.storageSv.DownloadSAS(ctx, &storageModel.DownloadSASRequest{
 		FileName: downloadFileName,
 	})
 	if err != nil {
@@ -152,12 +171,12 @@ func (u *usecase) Download(ctx context.Context, userId int64, params *models.Dow
 		return nil, err
 	}
 
-	return &models.DownloadResponse{
+	return &storageModel.DownloadResponse{
 		Url: sas.Url,
 	}, nil
 }
 
-func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *models.DownloadWithSecretRequest) (*models.DownloadResponse, error) {
+func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *storageModel.DownloadWithSecretRequest) (*storageModel.DownloadResponse, error) {
 	log := log.New("service", "DownloadWithSecret")
 
 	// Validation
@@ -168,10 +187,9 @@ func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *
 	if params.Token == "" {
 		return nil, fmt.Errorf("token is required")
 	}
-	// End validation
 
 	// Get file info
-	file, err := u.storageSv.GetOne(ctx, &models.RequestParams{
+	file, err := u.storageSv.GetOne(ctx, &storageModel.RequestParams{
 		UUID:  params.FileId,
 		Token: params.Token,
 	})
@@ -184,15 +202,20 @@ func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *
 	}
 
 	// Check permission
+	if file.SecretId != "" {
+		return nil, fmt.Errorf("permission denied")
+	}
 	if file.CreatedBy != userId {
 		return nil, fmt.Errorf("permission denied")
 	}
+	// End validation
 
 	downloadFileName := file.Token
 	if file.Ext != "" {
 		downloadFileName += file.Ext
 	}
-	sas, err := u.storageSv.DownloadSAS(ctx, &models.DownloadSASRequest{
+	downloadFileName = path.Join("public", downloadFileName)
+	sas, err := u.storageSv.DownloadSAS(ctx, &storageModel.DownloadSASRequest{
 		FileName: downloadFileName,
 	})
 	if err != nil {
@@ -200,7 +223,7 @@ func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *
 		return nil, err
 	}
 
-	return &models.DownloadResponse{
+	return &storageModel.DownloadResponse{
 		Url: sas.Url,
 	}, nil
 }

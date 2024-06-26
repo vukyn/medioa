@@ -4,6 +4,7 @@ import "mime/multipart"
 
 type UploadBlobRequest struct {
 	SessionId string
+	SecretId  string
 	File      *multipart.FileHeader
 }
 

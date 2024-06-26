@@ -40,6 +40,7 @@ func (m *mongo) GetOne(ctx context.Context, queries map[string]interface{}) (*en
 	_type := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_TYPE, "", true)
 	token := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_TOKEN, "", true)
 	ext := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_EXT, "", true)
+	secretId := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_SECRET_ID, "", true)
 	lifeTime := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_LIFE_TIME, 0, true)
 
 	if uuid != "" {
@@ -59,6 +60,9 @@ func (m *mongo) GetOne(ctx context.Context, queries map[string]interface{}) (*en
 	}
 	if ext != "" {
 		filter = append(filter, bson.E{Key: "ext", Value: ext})
+	}
+	if secretId != "" {
+		filter = append(filter, bson.E{Key: "secret_id", Value: secretId})
 	}
 
 	var obj entity.Storage

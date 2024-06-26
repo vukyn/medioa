@@ -18,7 +18,7 @@ primary_region = 'sin'
   LOG_LEVEL = 'info'
   LOG_MODE = 'json'
   SHUTDOWN_TIMEOUT = '5s'
-  STORAGE_CONTAINER = 'media'
+  STORAGE_CONTAINER = 'medioa'
   VERSION = '1.0.1'
   UPLOAD_MAX_SIZE_MB = '20'
 
