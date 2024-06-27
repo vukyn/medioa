@@ -7,6 +7,7 @@ GOPATH  ?= $(shell go env GOPATH)
 ENV_FILE = ./.env
 PROJECT_NAME = medioa
 COLOR := "\e[1;36m%s\e[0m\n"
+DOMAIN = https://medioa.fly.dev
 
 
 ##### Build Flags ######
@@ -66,6 +67,10 @@ down:
 stop:
 	docker compose -p $(PROJECT_NAME) $(DOCKER_COMPOSE_FILES) --env-file $(ENV_FILE) stop
 	@printf $(COLOR) "Server stopped"
+
+open:
+	@printf $(COLOR) "Opening $(DOMAIN)/index"
+	open $(DOMAIN)/index
 
 fly-launch:
 	@printf $(COLOR) "Launching $(PROJECT_NAME) to fly.io"

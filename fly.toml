@@ -19,7 +19,7 @@ primary_region = 'sin'
   LOG_MODE = 'json'
   SHUTDOWN_TIMEOUT = '5s'
   STORAGE_CONTAINER = 'medioa'
-  VERSION = '1.0.1'
+  VERSION = '1.0.2'
   UPLOAD_MAX_SIZE_MB = '20'
 
 [http_service]
