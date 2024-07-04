@@ -68,7 +68,7 @@ info:
   title: Medioa API
   version: "1.0"
 paths:
-  /storage/download/{file_name}:
+  /storage/download/{file_id}:
     get:
       consumes:
       - application/json
@@ -120,7 +120,7 @@ paths:
       summary: Create new secret
       tags:
       - Storage
-  /storage/secret/download/{file_name}:
+  /storage/secret/download/{file_id}:
     get:
       consumes:
       - application/json

@@ -20,7 +20,7 @@
 		<!-- Toaster Notification -->
 
 		<!-- Font Awesome -->
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 		<!-- Font Awesome -->
 
 		<style>
@@ -66,12 +66,14 @@
 				font-size: 0.7rem; /* Adjust the size as needed */
 				text-align: center;
 			}
+			.secret-row-btn,
 			.delete-row-btn,
 			.refresh-row-btn {
 				display: inline-block;
 				vertical-align: middle; /* Align buttons vertically */
 				margin-right: 5px; /* Adjust spacing between buttons */
 			}
+			.secret-row-btn i,
 			.delete-row-btn i,
 			.refresh-row-btn i {
 				font-size: 0.875rem; /* Adjust the size of the icons as needed */
@@ -232,7 +234,7 @@
 						<div class="modal-body">
 							<p>Please keep your token private.</p>
 							<div class="input-group">
-								<input type="text" class="form-control" id="secretTokenInput" readonly />
+								<input type="text" class="form-control" id="secretTokenText" readonly />
 								<div class="input-group-append">
 									<button class="btn btn-outline-secondary" type="button" id="copySecretTokenButton">
 										<i class="fas fa-copy"></i>
@@ -259,23 +261,25 @@
 			>
 				<div class="modal-dialog modal-dialog-centered" role="document">
 					<div class="modal-content">
-						<div class="modal-header">
-							<h5 class="modal-title" id="secretTokenInputModal">Download Secret File</h5>
-							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-								<span aria-hidden="true">&times;</span>
-							</button>
-						</div>
-						<div class="modal-body">
-							<form id="secretForm">
-								<div class="input-group">
-									<label for="secretTokenInput">Secret token:</label>
-									<input type="password" class="form-control" id="secretTokenInput" placeholder="Enter secret" />
+						<form id="secretTokenInputForm">
+							<div class="modal-header">
+								<h5 class="modal-title" id="secretTokenInputModal">Unlock File</h5>
+								<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+							</div>
+							<div class="modal-body">
+								<div class="form-group">
+									<label for="secretTokenInput">Secret:</label>
+									<input type="hidden" id="fileIdInput" />
+									<input type="hidden" id="fileTokenInput" />
+									<input type="password" class="form-control" id="secretTokenInput" placeholder="Enter secret" required />
 								</div>
-							</form>
-						</div>
-					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-secondary" data-dismiss="modal">Send</button>
+							</div>
+							<div class="modal-footer">
+								<button type="submit" class="btn btn-primary">Send</button>
+							</div>
+						</form>
 					</div>
 				</div>
 			</div>
@@ -408,21 +412,30 @@
 						showSuccess("File uploaded successfully.");
 						var fileId = response.data.file_id;
 						var fileName = response.data.file_name;
+						var token = response.data.token;
 						var apiDownloadUrl = response.data.url;
+						var uploadedAt = new Date().toLocaleString();
+						var hasSecret = secret !== "";
 						if (secret === "") {
 							$.ajax({
 								url: response.data.url,
 								type: "GET",
 								success: function (downloadResponse) {
 									var actualDownloadUrl = downloadResponse.data.url;
-									var uploadedAt = new Date().toLocaleString();
 
 									// Save file info to local storage
-									var hasSecret = false;
-									saveFileToLocalStorage(fileId, fileName, apiDownloadUrl, actualDownloadUrl, uploadedAt, hasSecret);
+									saveFileToLocalStorage(
+										fileId,
+										fileName,
+										token,
+										apiDownloadUrl,
+										actualDownloadUrl,
+										uploadedAt,
+										hasSecret
+									);
 
 									// Update the table
-									addFileToTable(fileId, fileName, apiDownloadUrl, actualDownloadUrl, uploadedAt, hasSecret);
+									addFileToTable(fileId, fileName, token, apiDownloadUrl, actualDownloadUrl, uploadedAt, hasSecret);
 								},
 								error: function () {
 									showError("An error occurred while retrieving the download link.");
@@ -430,22 +443,21 @@
 							});
 						} else {
 							// Save file info to local storage
-							var hasSecret = true;
-							saveFileToLocalStorage(fileId, fileName, apiDownloadUrl, "", uploadedAt, hasSecret);
+							saveFileToLocalStorage(fileId, fileName, token, apiDownloadUrl, "", uploadedAt, hasSecret);
 
 							// Update the table
-							addFileToTable(fileId, fileName, apiDownloadUrl, "", uploadedAt, hasSecret);
+							addFileToTable(fileId, fileName, token, apiDownloadUrl, "", uploadedAt, hasSecret);
 						}
 					},
 					error: function () {
 						showError("An error occurred while uploading the file.");
 					},
+				}).then(function () {
+					// reset
+					$("#resetButton").trigger("click");
+					$("#downloadLink").attr("href", actualDownloadUrl);
+					$("#downloadLinkContainer").show();
 				});
-
-				// reset
-				$("#resetButton").trigger("click");
-				$("#downloadLink").attr("href", actualDownloadUrl);
-				$("#downloadLinkContainer").show();
 			});
 
 			$("#secretForm").submit(function (event) {
@@ -485,12 +497,48 @@
 						$("#secretCollapse").collapse("hide");
 
 						var token = response.data.access_token;
-						$("#secretTokenInput").val(token);
+						$("#secretTokenText").val(token);
 						$("#secretTokenModal").modal("show");
 					},
 					error: function () {
 						showError("An error occurred while creating new secret token");
 					},
+				});
+			});
+
+			$("#secretTokenInputForm").submit(function (event) {
+				event.preventDefault();
+
+				var secret = $("#secretTokenInput").val().trim();
+				var fileId = $("#fileIdInput").val();
+				var token = $("#fileTokenInput").val();
+
+				var isError = false;
+				$.ajax({
+					url: `/api/v1/storage/secret/download/${fileId}?token=${token}&secret=${secret}`,
+					type: "GET",
+					success: function (response) {
+						if (response.error) {
+							isError = true;
+							if (response.error.message === "permission denied") {
+								showError("Permission denied. Invalid secret token.");
+							} else {
+								showError(`${response.error.code}: ${response.error.message}`);
+							}
+							return;
+						}
+						var actualDownloadUrl = response.data.url;
+						window.open(actualDownloadUrl, "_blank");
+					},
+					error: function () {
+						showError("An error occurred while retrieving the download link.");
+					},
+				}).then(function () {
+					if (!isError) {
+						$("#secretTokenInput").val("");
+						$("#fileIdInput").val("");
+						$("#fileTokenInput").val("");
+					}
 				});
 			});
 
@@ -520,8 +568,8 @@
 
 			// Handle copy to clipboard
 			$("#copySecretTokenButton").click(function () {
-				var secretTokenInput = $("#secretTokenInput");
-				secretTokenInput.select();
+				var secretTokenText = $("#secretTokenText");
+				secretTokenText.select();
 				document.execCommand("copy");
 				showNotification("Token copied to clipboard");
 			});
@@ -530,9 +578,9 @@
 				fileName = fileName.split("\\").pop();
 				return fileName;
 			}
-			function saveFileToLocalStorage(fileId, fileName, downloadApi, downloadLink, uploadedAt, hasSecret) {
+			function saveFileToLocalStorage(fileId, fileName, token, downloadApi, downloadLink, uploadedAt, hasSecret) {
 				var files = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
-				files.push({ fileId, fileName, downloadApi, downloadLink, uploadedAt, hasSecret });
+				files.push({ fileId, fileName, token, downloadApi, downloadLink, uploadedAt, hasSecret });
 				localStorage.setItem("uploadedFiles", JSON.stringify(files));
 			}
 			function updateFileDownloadLinkFromLocalStorage(fileId, downloadLink) {
@@ -554,23 +602,44 @@
 			function loadFilesFromLocalStorage() {
 				var files = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
 				files.forEach(function (file) {
-					addFileToTable(file.fileId, file.fileName, file.downloadApi, file.downloadLink, file.uploadedAt, file.hasSecret);
+					addFileToTable(
+						file.fileId,
+						file.fileName,
+						file.token,
+						file.downloadApi,
+						file.downloadLink,
+						file.uploadedAt,
+						file.hasSecret
+					);
 				});
 			}
-			function addFileToTable(fileId, fileName, downloadApi, downloadLink, uploadedAt, hasSecret) {
+			function addFileToTable(fileId, fileName, token, downloadApi, downloadLink, uploadedAt, hasSecret) {
+				var tdFileId = `<td style="display:none;">${fileId}</td>`;
+				var tdFileName = `<td>${fileName}</td>`;
+				var tdToken = `<td style="display:none;">${token}</td>`;
+				var tdDownloadLink = `<td></td>`;
+				if (downloadLink !== "") {
+					tdDownloadLink = `<td>
+						<a href="${downloadLink}" target="_blank">link</a>
+						<i class="fas fa-copy copy-url-icon" style="cursor: pointer;" data-url="${downloadLink}"></i>
+					</td>`;
+				}
+				var tdUploadAt = `<td>${uploadedAt}</td>`;
+				var tdHasSecret = `<td>${hasSecret ? "Yes" : "No"}</td>`;
+				var btnRefresh = `<button class="btn btn-info refresh-row-btn" data-toggle="tooltip" title="Refresh link"><i class="fas fa-sync-alt"></i></button>`;
+				var btnDelete = `<button class="btn btn-danger delete-row-btn" data-toggle="tooltip" title="Delete"><i class="fas fa-trash-alt"></i></button>`;
+				var btnSecret = `<button class="btn btn-warning secret-row-btn" data-toggle="tooltip" title="Unlock File"><i class="fas fa-key"></i></button>`;
 				var row = `<tr>
-					<td style="display:none;">${fileId}</td>
-                    <td>${fileName}</td>
-                    <td>
-                        <a href="${downloadLink}" target="_blank">link</a>
-                    	<i class="fas fa-copy copy-url-icon" style="cursor: pointer;" data-url="${downloadLink}"></i>
-                    </td>
-                    <td>${uploadedAt}</td>
-					<td>${hasSecret ? "Yes" : "No"}</td>
+					${tdFileId}
+					${tdFileName}
+					${tdToken}
+					${tdDownloadLink}
+					${tdUploadAt}
+					${tdHasSecret}
                     <td>
 						<div class="action-buttons-container">
-							<button class="btn btn-info refresh-row-btn" data-toggle="tooltip" title="Refresh link"><i class="fas fa-sync-alt"></i></button>
-							<button class="btn btn-danger delete-row-btn" data-toggle="tooltip" title="Delete"><i class="fas fa-trash-alt"></i></button>
+							${hasSecret ? btnSecret : btnRefresh}
+							${btnDelete}
         				</div>
                     </td>
                 </tr>`;
@@ -603,10 +672,10 @@
 								updateFileDownloadLinkFromLocalStorage(fileId, actualDownloadUrl);
 
 								// Update the table
-								row.find("td:nth-child(2) a").attr("href", actualDownloadUrl).text("link");
+								row.find("td:nth-child(4) a").attr("href", actualDownloadUrl).text("link");
 
 								// Update copy-url-icon click event
-								row.find("td:nth-child(2) i").data("url", actualDownloadUrl);
+								row.find("td:nth-child(4) i").data("url", actualDownloadUrl);
 
 								showSuccess("Download link refreshed successfully.");
 							},
@@ -614,6 +683,18 @@
 								showError("An error occurred while refreshing the download link.");
 							},
 						});
+					});
+
+				$(".secret-row-btn")
+					.last()
+					.click(function () {
+						var row = $(this).closest("tr");
+						var fileId = row.find("td:first").text();
+						var token = row.find("td:nth-child(3)").text();
+						$("#fileIdInput").val(fileId);
+						$("#fileTokenInput").val(token);
+						$("#secretTokenInput").val("");
+						$("#secretTokenInputModal").modal("show");
 					});
 
 				$(".delete-row-btn")

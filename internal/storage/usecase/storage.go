@@ -93,7 +93,8 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *st
 
 	fileName := params.FileName
 	if fileName == "" {
-		fileName = params.File.Filename
+		ext := path.Ext(params.File.Filename)
+		fileName = strings.ReplaceAll(params.File.Filename, ext, "")
 	}
 
 	// Save to database

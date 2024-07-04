@@ -19,7 +19,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/storage/download/{file_name}": {
+        "/storage/download/{file_id}": {
             "get": {
                 "security": [
                     {
@@ -102,7 +102,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/storage/secret/download/{file_name}": {
+        "/storage/secret/download/{file_id}": {
             "get": {
                 "security": [
                     {

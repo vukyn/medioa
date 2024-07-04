@@ -12,7 +12,7 @@
     },
     "basePath": "/api/v1",
     "paths": {
-        "/storage/download/{file_name}": {
+        "/storage/download/{file_id}": {
             "get": {
                 "security": [
                     {
@@ -95,7 +95,7 @@
                 }
             }
         },
-        "/storage/secret/download/{file_name}": {
+        "/storage/secret/download/{file_id}": {
             "get": {
                 "security": [
                     {

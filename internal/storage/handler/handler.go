@@ -91,7 +91,7 @@ func (h Handler) Upload(ctx *gin.Context) {
 //	@Param			file_id	path		string	true	"file id"
 //	@Param			token	query		string	true	"token"
 //	@Success		200		{object}	models.DownloadResponse
-//	@Router			/storage/download/{file_name} [get]
+//	@Router			/storage/download/{file_id} [get]
 func (h Handler) Download(ctx *gin.Context) {
 	userId := int64(1)
 	fileId := ctx.Param("file_id")
@@ -159,7 +159,7 @@ func (h Handler) UploadWithSecret(ctx *gin.Context) {
 //	@Param			token	query		string	true	"token"
 //	@Param			secret	query		string	true	"secret"
 //	@Success		200		{object}	models.DownloadResponse
-//	@Router			/storage/secret/download/{file_name} [get]
+//	@Router			/storage/secret/download/{file_id} [get]
 func (h Handler) DownloadWithSecret(ctx *gin.Context) {
 	userId := int64(1)
 	fileId := ctx.Param("file_id")
