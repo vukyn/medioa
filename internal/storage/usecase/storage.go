@@ -202,8 +202,20 @@ func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *
 		return nil, fmt.Errorf("file not found")
 	}
 
+	// Get secret info
+	secret, err := u.secretSv.GetOne(ctx, &secretModel.RequestParams{
+		AccessToken: params.Secret,
+	})
+	if err != nil {
+		log.Error("service.secretSv.GetOne", err)
+		return nil, err
+	}
+	if secret == nil {
+		return nil, fmt.Errorf("secret token is invalid")
+	}
+
 	// Check permission
-	if file.SecretId != "" {
+	if file.SecretId != secret.UUID {
 		return nil, fmt.Errorf("permission denied")
 	}
 	if file.CreatedBy != userId {
@@ -215,7 +227,7 @@ func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *
 	if file.Ext != "" {
 		downloadFileName += file.Ext
 	}
-	downloadFileName = path.Join("public", downloadFileName)
+	downloadFileName = path.Join("private", file.SecretId, downloadFileName)
 	sas, err := u.storageSv.DownloadSAS(ctx, &storageModel.DownloadSASRequest{
 		FileName: downloadFileName,
 	})

@@ -57,6 +57,7 @@ func (r *RequestParams) ToMap() map[string]interface{} {
 
 type Response struct {
 	Id          int64     `json:"id"`
+	UUID        string    `json:"uuid"`
 	DownloadUrl string    `json:"download_url"`
 	Type        string    `json:"type"`
 	Token       string    `json:"token"`

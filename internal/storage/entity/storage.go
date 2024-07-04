@@ -32,6 +32,7 @@ func (s *Storage) TableName() string {
 func (e *Storage) Export() *models.Response {
 	return &models.Response{
 		Id:          e.Id,
+		UUID:        e.UUID,
 		DownloadUrl: e.DownloadUrl,
 		Type:        e.Type,
 		Token:       e.Token,
