@@ -31,6 +31,9 @@ COPY --from=builder /app/main /app/main
 # Copy the UI files
 COPY --from=builder /app/ui/index.html /ui/index.html
 
+# Copy the UI assets
+COPY --from=builder /app/ui/assets /ui/assets
+
 # Copy the CA certificates from the intermediate certs stage
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
