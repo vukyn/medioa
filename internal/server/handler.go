@@ -44,6 +44,7 @@ func (s *Server) initSwagger() {
 
 func (s *Server) initStaticFiles() {
 	s.router.StaticFS("/index", http.Dir("ui"))
+	s.router.GET("/", func(ctx *gin.Context) { ctx.Redirect(http.StatusSeeOther, "/index") })
 }
 
 func (s *Server) initSocket() {
