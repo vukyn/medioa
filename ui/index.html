@@ -110,47 +110,107 @@
 
 			<!-- secret section -->
 			<div>
-				<button
-					class="btn btn-link mt-3"
-					type="button"
-					data-toggle="collapse"
-					data-target="#secretCollapse"
-					aria-expanded="false"
-					aria-controls="secretCollapse"
-				>
-					Secret
-				</button>
-				<div class="collapse" id="secretCollapse">
-					<div class="card card-body">
-						<form id="secretForm">
-							<div class="form-group">
-								<label for="usernameInput">Username<span class="text-danger">*</span> :</label>
-								<input type="text" class="form-control" id="usernameInput" placeholder="Enter username" required />
-							</div>
-							<div class="form-group">
-								<label for="passwordInput">Password<span class="text-danger">*</span> :</label>
-								<input type="password" class="form-control" id="passwordInput" placeholder="Enter password" required />
-							</div>
-							<div class="form-group">
-								<label for="pinCodeInput">PIN Code<span class="text-danger">*</span> :</label>
-								<input
-									id="pinCodeInput"
-									class="form-control"
-									type="password"
-									pattern="[0-9]{4}"
-									maxlength="4"
-									inputmode="numeric"
-									placeholder="Enter PIN code"
-									title="PIN code must be 4 digits"
-									required
-								/>
-							</div>
-							<div class="form-group">
-								<label for="masterKeyInput">Master Key (optional):</label>
-								<input type="text" class="form-control" id="masterKeyInput" placeholder="Enter master key" />
-							</div>
-							<button type="submit" class="btn btn-primary">Save</button>
-						</form>
+				<div class="d-flex justify-content-start mt-3">
+					<!-- create btn -->
+					<button
+						class="btn btn-link"
+						type="button"
+						data-toggle="collapse"
+						data-target="#createSecretCollapse"
+						aria-expanded="false"
+						aria-controls="createSecretCollapse"
+					>
+						Secret (Create)
+					</button>
+
+					<!-- reset btn -->
+					<button
+						class="btn btn-link"
+						type="button"
+						data-toggle="collapse"
+						data-target="#resetSecretCollapse"
+						aria-expanded="false"
+						aria-controls="resetSecretCollapse"
+					>
+						Secret (Reset)
+					</button>
+				</div>
+
+				<div id="secretCollapseContainer">
+					<!-- create form -->
+					<div class="collapse" id="createSecretCollapse" data-parent="#secretCollapseContainer">
+						<div class="card card-body">
+							<form id="createSecretForm">
+								<div class="form-group">
+									<label for="createSecretUsernameInput">Username<span class="text-danger">*</span> :</label>
+									<input
+										type="text"
+										class="form-control"
+										id="createSecretUsernameInput"
+										placeholder="Enter username"
+										required
+									/>
+								</div>
+								<div class="form-group">
+									<label for="createSecretPasswordInput">Password<span class="text-danger">*</span> :</label>
+									<input
+										type="password"
+										class="form-control"
+										id="createSecretPasswordInput"
+										placeholder="Enter password"
+										required
+									/>
+								</div>
+								<div class="form-group">
+									<label for="pinCodeInput">PIN Code<span class="text-danger">*</span> :</label>
+									<input
+										id="pinCodeInput"
+										class="form-control"
+										type="password"
+										pattern="[0-9]{4}"
+										maxlength="4"
+										inputmode="numeric"
+										placeholder="Enter PIN code"
+										title="PIN code must be 4 digits"
+										required
+									/>
+								</div>
+								<div class="form-group">
+									<label for="masterKeyInput">Master Key (optional):</label>
+									<input type="text" class="form-control" id="masterKeyInput" placeholder="Enter master key" />
+								</div>
+								<button type="submit" class="btn btn-primary">Save</button>
+							</form>
+						</div>
+					</div>
+
+					<!-- reset form -->
+					<div class="collapse" id="resetSecretCollapse" data-parent="#secretCollapseContainer">
+						<div class="card card-body">
+							<form id="resetSecretForm">
+								<div class="form-group">
+									<label for="resetSecretUsernameInput">Username<span class="text-danger">*</span> :</label>
+									<input
+										type="text"
+										class="form-control"
+										id="resetSecretUsernameInput"
+										placeholder="Enter username"
+										required
+									/>
+								</div>
+								<div class="form-group">
+									<label for="resetSecretPasswordInput">Password<span class="text-danger">*</span> :</label>
+									<input
+										type="password"
+										class="form-control"
+										id="resetSecretPasswordInput"
+										placeholder="Enter password"
+										required
+									/>
+								</div>
+								<button type="submit" class="btn btn-primary">Reset</button>
+							</form>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -227,13 +287,13 @@
 				<div class="modal-dialog modal-dialog-centered" role="document">
 					<div class="modal-content">
 						<div class="modal-header">
-							<h5 class="modal-title" id="secretTokenModalLabel">Secret Token Created</h5>
+							<h5 class="modal-title" id="secretTokenModalLabel">TADA!!! YOUR SECRET TOKEN</h5>
 							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
 								<span aria-hidden="true">&times;</span>
 							</button>
 						</div>
 						<div class="modal-body">
-							<p>Please keep your token private.</p>
+							<p>Please keep it private.</p>
 							<div class="input-group">
 								<input type="text" class="form-control" id="secretTokenText" readonly />
 								<div class="input-group-append">
@@ -461,11 +521,11 @@
 				});
 			});
 
-			$("#secretForm").submit(function (event) {
+			$("#createSecretForm").submit(function (event) {
 				event.preventDefault();
 
-				var username = $("#usernameInput").val().trim();
-				var password = $("#passwordInput").val().trim();
+				var username = $("#createSecretUsernameInput").val().trim();
+				var password = $("#createSecretPasswordInput").val().trim();
 				var pinCode = $("#pinCodeInput").val().trim();
 				var masterKey = $("#masterKeyInput").val().trim();
 
@@ -494,8 +554,8 @@
 						}
 
 						showSuccess("Secret token created successfully.");
-						$("#secretForm")[0].reset();
-						$("#secretCollapse").collapse("hide");
+						$("#createSecretForm")[0].reset();
+						$("#createSecretCollapse").collapse("hide");
 
 						var token = response.data.access_token;
 						$("#secretTokenText").val(token);
@@ -503,6 +563,42 @@
 					},
 					error: function () {
 						showError("An error occurred while creating new secret token");
+					},
+				});
+			});
+
+			$("#resetSecretForm").submit(function (event) {
+				event.preventDefault();
+
+				var username = $("#resetSecretUsernameInput").val().trim();
+				var password = $("#resetSecretPasswordInput").val().trim();
+
+				var formData = {
+					username: username,
+					password: password,
+				};
+
+				$.ajax({
+					url: "/api/v1/storage/secret/retrieve",
+					type: "PUT",
+					contentType: "application/json",
+					data: JSON.stringify(formData),
+					success: function (response) {
+						if (response.error) {
+							showError(`${response.error.code}: ${response.error.message}`);
+							return;
+						}
+
+						showSuccess("Secret token reset successfully.");
+						$("#resetSecretForm")[0].reset();
+						$("#resetSecretCollapse").collapse("hide");
+						console.log("Reset secret token:", response);
+						var token = response.data.access_token;
+						$("#secretTokenText").val(token);
+						$("#secretTokenModal").modal("show");
+					},
+					error: function () {
+						showError("An error occurred while reset secret token");
 					},
 				});
 			});
@@ -553,7 +649,8 @@
 				$("#downloadLink").attr("href", "");
 				$("#fileNameInput").val("");
 				$("#secretInput").val("");
-				$("secretForm")[0].reset();
+				$("createSecretForm")[0].reset();
+				$("resetSecretForm")[0].reset();
 			});
 
 			$("#copyButton").click(function () {

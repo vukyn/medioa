@@ -94,8 +94,8 @@ func (u *usecase) RetrieveSecret(ctx context.Context, userId int64, params *stor
 	}
 
 	return &storageModel.RetrieveSecretResponse{
-		UserId:    foundSecret.UUID,
-		AccessKey: accessToken,
+		UserId:      foundSecret.UUID,
+		AccessToken: accessToken,
 	}, nil
 }
 

@@ -18,8 +18,8 @@ type RetrieveSecretRequest struct {
 }
 
 type RetrieveSecretResponse struct {
-	UserId    string `json:"user_id"`
-	AccessKey string `json:"access_key"`
+	UserId      string `json:"user_id"`
+	AccessToken string `json:"access_token"`
 }
 
 type ResetPinCodeRequest struct {

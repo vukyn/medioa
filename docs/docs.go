@@ -396,7 +396,7 @@ const docTemplate = `{
         "medioa_internal_storage_models.RetrieveSecretResponse": {
             "type": "object",
             "properties": {
-                "access_key": {
+                "access_token": {
                     "type": "string"
                 },
                 "user_id": {

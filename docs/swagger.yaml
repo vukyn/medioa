@@ -39,7 +39,7 @@ definitions:
     type: object
   medioa_internal_storage_models.RetrieveSecretResponse:
     properties:
-      access_key:
+      access_token:
         type: string
       user_id:
         type: string
