@@ -353,12 +353,11 @@
 
 			function startSession() {
 				$.ajax({
-					url: "/ws/start",
-					// url: "https://medioa.fly.dev/ws/start",
+					// url: "/ws/start",
+					url: "https://medioa.fly.dev/ws/start",
 					type: "GET",
 					success: function (data) {
 						sessionId = data.id;
-						console.log("Session ID:", sessionId);
 						connectWebSocket(sessionId);
 					},
 					error: function (xhr, status, error) {
@@ -369,8 +368,8 @@
 
 			function connectWebSocket(id) {
 				// Establish WebSocket connection
-				socket = new WebSocket("ws://127.0.0.1:8080/ws/" + id);
-				// socket = new WebSocket("wss://medioa.fly.dev/ws/" + id);
+				// socket = new WebSocket("ws://127.0.0.1:8080/ws/" + id);
+				socket = new WebSocket("wss://medioa.fly.dev/ws/" + id);
 				if (!socket) {
 					return;
 				}
@@ -592,7 +591,6 @@
 						showSuccess("Secret token reset successfully.");
 						$("#resetSecretForm")[0].reset();
 						$("#resetSecretCollapse").collapse("hide");
-						console.log("Reset secret token:", response);
 						var token = response.data.access_token;
 						$("#secretTokenText").val(token);
 						$("#secretTokenModal").modal("show");
@@ -770,7 +768,6 @@
 								}
 
 								var actualDownloadUrl = response.data.url;
-								console.log("Actual download link:", actualDownloadUrl);
 
 								// Update download link in local storage
 								updateFileDownloadLinkFromLocalStorage(fileId, actualDownloadUrl);
