@@ -666,8 +666,13 @@
 						$.ajax({
 							url: downloadApi,
 							type: "GET",
-							success: function (downloadResponse) {
-								var actualDownloadUrl = downloadResponse.data.url;
+							success: function (response) {
+								if (response.error) {
+									showError(`${response.error.code}: ${response.error.message}`);
+									return;
+								}
+
+								var actualDownloadUrl = response.data.url;
 								console.log("Actual download link:", actualDownloadUrl);
 
 								// Update download link in local storage
