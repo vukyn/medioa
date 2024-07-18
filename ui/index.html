@@ -24,80 +24,19 @@
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 		<!-- Font Awesome -->
 
-		<style>
-			body {
-				background-color: #f8f9fa;
-			}
-			.upload-container {
-				background-color: #fff;
-				padding: 30px;
-				border-radius: 10px;
-				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-				max-width: 600px;
-				margin: 50px auto;
-			}
-			.progress {
-				height: 30px;
-				border-radius: 5px;
-				overflow: hidden;
-			}
-			.progress-bar {
-				font-weight: bold;
-			}
-			.file-input {
-				border: 2px dashed #ced4da;
-				padding: 20px;
-				border-radius: 5px;
-				text-align: center;
-			}
-			.file-input input[type="file"] {
-				display: none;
-			}
-			.file-input label {
-				display: block;
-				cursor: pointer;
-				color: #007bff;
-			}
-			table th {
-				font-size: 0.75rem; /* Adjust the size as needed */
-				text-align: center;
-				vertical-align: middle !important; /* Align text vertically */
-			}
-			table td {
-				font-size: 0.7rem; /* Adjust the size as needed */
-				text-align: center;
-			}
-			.secret-row-btn,
-			.delete-row-btn,
-			.refresh-row-btn {
-				display: inline-block;
-				vertical-align: middle; /* Align buttons vertically */
-				margin-right: 5px; /* Adjust spacing between buttons */
-			}
-			.secret-row-btn i,
-			.delete-row-btn i,
-			.refresh-row-btn i {
-				font-size: 0.875rem; /* Adjust the size of the icons as needed */
-			}
-			.action-buttons-container {
-				white-space: nowrap; /* Prevent buttons from wrapping */
-			}
-			.tooltip-inner {
-				font-size: 14px; /* Adjust tooltip font size */
-			}
-			.text-danger {
-				color: #dc3545;
-			}
-		</style>
+		<!-- Custom CSS -->
+		<link rel="stylesheet" href="assets/style.css" />
 	</head>
 	<body>
 		<div class="container upload-container">
 			<!-- upload section -->
 			<h2 class="text-center">Upload a File</h2>
 			<form id="uploadForm" enctype="multipart/form-data">
-				<div class="form-group file-input">
-					<input type="file" id="fileInput" name="file" multiple="false" />
-					<label for="fileInput">Click to choose a file</label>
+				<div id="dropZone" class="drop-zone">
+					<div class="form-group file-input">
+						<input type="file" id="fileInput" name="file" multiple="false" />
+						<label for="fileInput">Click to choose a file</label>
+					</div>
 				</div>
 				<button type="submit" id="uploadButton" class="btn btn-primary btn-block" disabled>Upload</button>
 				<button type="button" id="resetButton" class="btn btn-secondary btn-block mt-2" disabled>Reset</button>
@@ -861,11 +800,66 @@
 				}).showToast();
 			}
 
+			function handleDnDFileInput() {
+				const $dropZone = $("#dropZone");
+				const $fileInput = $("#fileInput");
+
+				// Prevent default drag behaviors
+				const preventDefaults = function (e) {
+					e.preventDefault();
+					e.stopPropagation();
+				};
+
+				$.each(["dragenter", "dragover", "dragleave", "drop"], function (_, eventName) {
+					$dropZone.on(eventName, preventDefaults);
+				});
+
+				// Highlight drop zone when file is dragged over it
+				$dropZone.on("dragenter dragover", function () {
+					$dropZone.addClass("dragover");
+				});
+
+				// Unhighlight drop zone when file is dragged out of it
+				$dropZone.on("dragleave drop", function () {
+					$dropZone.removeClass("dragover");
+				});
+
+				// Trigger file input click on drop zone click
+				let isTriggeredByDropZone = false;
+				$dropZone.on("click", function (e) {
+					if (!isTriggeredByDropZone) {
+						isTriggeredByDropZone = true;
+						const $target = $(e.target);
+						if ($target.is("label") || $target.is("input")) {
+							return;
+						} else {
+							$fileInput.trigger("click");
+						}
+					}
+					isTriggeredByDropZone = false;
+				});
+
+				// Handle dropped files
+				$dropZone.on("drop", function (e) {
+					const files = e.originalEvent.dataTransfer.files;
+					$fileInput[0].files = files;
+					if (files.length) {
+						const dataTransfer = new DataTransfer();
+						$.each(files, function (_, file) {
+							dataTransfer.items.add(file);
+						});
+						$fileInput[0].files = dataTransfer.files;
+						$fileInput.trigger("change"); // Trigger change event
+					}
+				});
+			}
+
 			$(document).ready(function () {
 				// Load files from local storage on page load
 				loadFilesFromLocalStorage();
 				$('[data-toggle="tooltip"]').tooltip();
 				startSession();
+				handleDnDFileInput();
 			});
 		</script>
 	</body>
