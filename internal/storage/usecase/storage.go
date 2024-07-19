@@ -32,8 +32,7 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *storageModel
 
 	fileName := params.FileName
 	if fileName == "" {
-		ext := path.Ext(params.File.Filename)
-		fileName = strings.ReplaceAll(params.File.Filename, ext, "")
+		fileName = getUploadedFileName(params.File)
 	}
 
 	// Save to database
@@ -93,8 +92,7 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *st
 
 	fileName := params.FileName
 	if fileName == "" {
-		ext := path.Ext(params.File.Filename)
-		fileName = strings.ReplaceAll(params.File.Filename, ext, "")
+		fileName = getUploadedFileName(params.File)
 	}
 
 	// Save to database
@@ -258,4 +256,14 @@ func sniffMimeType(file *multipart.FileHeader) (string, error) {
 	}
 
 	return mimeType.MediaType(), nil
+}
+
+func getUploadedFileName(file *multipart.FileHeader) string {
+	var fileName string
+	ext := path.Ext(file.Filename)
+	fileName = strings.ReplaceAll(file.Filename, ext, "")
+	if fileName == "" {
+		fileName = file.Filename
+	}
+	return fileName
 }
