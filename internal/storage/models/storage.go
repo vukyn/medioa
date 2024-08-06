@@ -1,29 +1,71 @@
 package models
 
-import "mime/multipart"
+import (
+	azBlobModel "medioa/internal/azblob/models"
+	"medioa/pkg/xtype"
+)
 
-type UploadRequest struct {
-	SessionId string                `json:"id"`
-	File      *multipart.FileHeader `json:"file"`
-	FileName  string                `json:"filename"`
+type UploadFileRequest struct {
+	SessionId string      `json:"session_id"`
+	File      *xtype.File `json:"file"`
+	FileName  string      `json:"file_name"`
 }
 
-func (r *UploadRequest) ToBlobRequest() *UploadBlobRequest {
-	return &UploadBlobRequest{
+func (r *UploadFileRequest) ToBlobRequest() *azBlobModel.UploadBlobRequest {
+	return &azBlobModel.UploadBlobRequest{
 		SessionId: r.SessionId,
 		File:      r.File,
 	}
 }
 
-type UploadWithSecretRequest struct {
-	SessionId string                `json:"id"`
-	Secret    string                `json:"secret"`
-	File      *multipart.FileHeader `json:"file"`
-	FileName  string                `json:"filename"`
+type UploadChunkRequest struct {
+	SessionId   string      `json:"session_id"`
+	FileId      string      `json:"file_id"`
+	FileName    string      `json:"file_name"`
+	Chunk       *xtype.File `json:"chunk"`
+	ChunkIndex  int64       `json:"chunk_index"`
+	TotalChunks int64       `json:"total_chunks"`
 }
 
-func (r *UploadWithSecretRequest) ToBlobRequest() *UploadBlobRequest {
-	return &UploadBlobRequest{
+func (r *UploadChunkRequest) ToBlobRequest(token string) *azBlobModel.UploadChunkRequest {
+	return &azBlobModel.UploadChunkRequest{
+		SessionId:   r.SessionId,
+		Token:       token,
+		FileName:    r.FileName,
+		Chunk:       r.Chunk,
+		ChunkIndex:  r.ChunkIndex,
+		TotalChunks: r.TotalChunks,
+	}
+}
+
+type UploadChunkResponse struct {
+	ChunkId string `json:"chunk_id"`
+	FileId  string `json:"file_id"`
+}
+
+type CommitChunkRequest struct {
+	SessionId string `json:"session_id"`
+	FileId    string `json:"file_id"`
+}
+
+type CommitChunkResponse struct {
+	Url      string `json:"url"`
+	Token    string `json:"token"`
+	Ext      string `json:"ext"`
+	FileId   string `json:"file_id"`
+	FileName string `json:"file_name"`
+	FileSize int64  `json:"file_size"`
+}
+
+type UploadWithSecretRequest struct {
+	SessionId string
+	Secret    string
+	File      *xtype.File
+	FileName  string
+}
+
+func (r *UploadWithSecretRequest) ToBlobRequest() *azBlobModel.UploadBlobRequest {
+	return &azBlobModel.UploadBlobRequest{
 		SessionId: r.SessionId,
 		File:      r.File,
 	}

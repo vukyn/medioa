@@ -1,5 +1,27 @@
 basePath: /api/v1
 definitions:
+  medioa_internal_storage_models.CommitChunkRequest:
+    properties:
+      file_id:
+        type: string
+      session_id:
+        type: string
+    type: object
+  medioa_internal_storage_models.CommitChunkResponse:
+    properties:
+      ext:
+        type: string
+      file_id:
+        type: string
+      file_name:
+        type: string
+      file_size:
+        type: integer
+      token:
+        type: string
+      url:
+        type: string
+    type: object
   medioa_internal_storage_models.CreateSecretRequest:
     properties:
       master_key:
@@ -42,6 +64,13 @@ definitions:
       access_token:
         type: string
       user_id:
+        type: string
+    type: object
+  medioa_internal_storage_models.UploadChunkResponse:
+    properties:
+      chunk_id:
+        type: string
+      file_id:
         type: string
     type: object
   medioa_internal_storage_models.UploadResponse:
@@ -221,7 +250,7 @@ paths:
         type: file
       - description: file name
         in: formData
-        name: filename
+        name: file_name
         type: string
       produces:
       - application/json
@@ -247,7 +276,7 @@ paths:
         type: string
       - description: binary file
         in: formData
-        name: chunk
+        name: file
         required: true
         type: file
       - description: file name
@@ -264,6 +293,79 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Upload media
+      tags:
+      - Storage
+  /storage/upload/commit:
+    post:
+      consumes:
+      - application/json
+      description: Commit all chunks to complete upload media file
+      parameters:
+      - description: session id
+        in: query
+        name: id
+        type: string
+      - description: commit chunk request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/medioa_internal_storage_models.CommitChunkRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/medioa_internal_storage_models.CommitChunkResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Commit upload media chunk
+      tags:
+      - Storage
+  /storage/upload/stage:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload media file (images, videos, etc.)
+      parameters:
+      - description: session id
+        in: query
+        name: id
+        type: string
+      - description: binary chunk
+        in: formData
+        name: chunk
+        required: true
+        type: file
+      - description: chunk index
+        in: formData
+        name: chunk_index
+        required: true
+        type: integer
+      - description: total chunk
+        in: formData
+        name: total_chunks
+        required: true
+        type: integer
+      - description: file id
+        in: formData
+        name: file_id
+        type: string
+      - description: file name
+        in: formData
+        name: file_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/medioa_internal_storage_models.UploadChunkResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Upload media by chunk
       tags:
       - Storage
 securityDefinitions:

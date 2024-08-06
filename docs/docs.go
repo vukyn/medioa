@@ -270,7 +270,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "file name",
-                        "name": "filename",
+                        "name": "file_name",
                         "in": "formData"
                     }
                 ],
@@ -312,7 +312,7 @@ const docTemplate = `{
                     {
                         "type": "file",
                         "description": "binary file",
-                        "name": "chunk",
+                        "name": "file",
                         "in": "formData",
                         "required": true
                     },
@@ -332,9 +332,157 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/storage/upload/commit": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Commit all chunks to complete upload media file",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Storage"
+                ],
+                "summary": "Commit upload media chunk",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session id",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "description": "commit chunk request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/medioa_internal_storage_models.CommitChunkRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/medioa_internal_storage_models.CommitChunkResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/storage/upload/stage": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Upload media file (images, videos, etc.)",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Storage"
+                ],
+                "summary": "Upload media by chunk",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session id",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "file",
+                        "description": "binary chunk",
+                        "name": "chunk",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "chunk index",
+                        "name": "chunk_index",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "total chunk",
+                        "name": "total_chunks",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "file id",
+                        "name": "file_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "file name",
+                        "name": "file_name",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/medioa_internal_storage_models.UploadChunkResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "medioa_internal_storage_models.CommitChunkRequest": {
+            "type": "object",
+            "properties": {
+                "file_id": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "medioa_internal_storage_models.CommitChunkResponse": {
+            "type": "object",
+            "properties": {
+                "ext": {
+                    "type": "string"
+                },
+                "file_id": {
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                },
+                "file_size": {
+                    "type": "integer"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "medioa_internal_storage_models.CreateSecretRequest": {
             "type": "object",
             "properties": {
@@ -400,6 +548,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "medioa_internal_storage_models.UploadChunkResponse": {
+            "type": "object",
+            "properties": {
+                "chunk_id": {
+                    "type": "string"
+                },
+                "file_id": {
                     "type": "string"
                 }
             }

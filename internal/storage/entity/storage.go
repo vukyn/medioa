@@ -23,6 +23,7 @@ type Storage struct {
 	SecretId    string    `gorm:"column:secret_id" bson:"secret_id"`
 	CreatedBy   int64     `gorm:"column:created_by" bson:"created_by"`
 	CreatedAt   time.Time `gorm:"autoCreateTime" bson:"created_at"`
+	ChunkIds    []string  `gorm:"column:chunk_ids" bson:"chunk_ids"`
 }
 
 func (s *Storage) TableName() string {
@@ -43,6 +44,7 @@ func (e *Storage) Export() *models.Response {
 		SecretId:    e.SecretId,
 		CreatedBy:   e.CreatedBy,
 		CreatedAt:   e.CreatedAt,
+		ChunkIds:    e.ChunkIds,
 	}
 }
 
@@ -68,6 +70,7 @@ func (e *Storage) ParseFromSaveRequest(req *models.SaveRequest) {
 		e.SecretId = req.SecretId
 		e.CreatedBy = req.CreatedBy
 		e.CreatedAt = req.CreatedAt
+		e.ChunkIds = req.ChunkIds
 	}
 }
 
@@ -138,6 +141,9 @@ func (e *Storage) ToBson() bson.D {
 	}
 	if !e.CreatedAt.IsZero() {
 		d = append(d, bson.E{Key: "created_at", Value: e.CreatedAt.UnixMilli()})
+	}
+	if len(e.ChunkIds) > 0 {
+		d = append(d, bson.E{Key: "chunk_ids", Value: e.ChunkIds})
 	}
 	return d
 }

@@ -68,6 +68,7 @@ type Response struct {
 	SecretId    string    `json:"secret_id"`
 	CreatedBy   int64     `json:"created_by"`
 	CreatedAt   time.Time `json:"created_at"`
+	ChunkIds    []string  `json:"chunk_ids"`
 }
 
 type SaveRequest struct {
@@ -81,6 +82,7 @@ type SaveRequest struct {
 	Ext         string
 	SecretId    string
 	LifeTime    int
+	ChunkIds    []string
 	CreatedBy   int64
 	CreatedAt   time.Time
 }
@@ -88,4 +90,9 @@ type SaveRequest struct {
 type ListPaging struct {
 	commonModel.ListPaging
 	Records []*Response
+}
+
+type AddChunkRequest struct {
+	Id      string
+	ChunkId string
 }

@@ -18,9 +18,9 @@ import (
 )
 
 type service struct {
-	cfg    *config.Config
-	lib    *commonModel.Lib
-	repo   repo.IRepository
+	cfg  *config.Config
+	lib  *commonModel.Lib
+	repo repo.IRepository
 }
 
 func InitService(cfg *config.Config, lib *commonModel.Lib, repo repo.IRepository) IService {

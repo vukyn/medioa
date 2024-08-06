@@ -2,6 +2,8 @@ package constants
 
 const (
 	STORAGE_ENDPOINT_UPLOAD               = "/storage/upload"
+	STORAGE_ENDPOINT_UPLOAD_STAGE         = "/storage/upload/stage"
+	STORAGE_ENDPOINT_UPLOAD_COMMIT        = "/storage/upload/commit"
 	STORAGE_ENDPOINT_UPLOAD_WITH_SECRET   = "/storage/secret/upload"
 	STORAGE_ENDPOINT_DOWNLOAD             = "/storage/download/:file_id"
 	STORAGE_ENDPOINT_DOWNLOAD_WITH_SECRET = "/storage/secret/download/:file_id"

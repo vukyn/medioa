@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"medioa/constants"
+	azBlobModel "medioa/internal/azblob/models"
 	secretModel "medioa/internal/secret/models"
 	storageModel "medioa/internal/storage/models"
 	"medioa/pkg/log"
-	"mime/multipart"
+	"medioa/pkg/xtype"
 	"path"
 	"strings"
 
@@ -15,8 +16,8 @@ import (
 	"github.com/zRedShift/mimemagic"
 )
 
-func (u *usecase) Upload(ctx context.Context, userId int64, params *storageModel.UploadRequest) (*storageModel.UploadResponse, error) {
-	log := log.New("service", "Upload")
+func (u *usecase) Upload(ctx context.Context, userId int64, params *storageModel.UploadFileRequest) (*storageModel.UploadResponse, error) {
+	log := log.New("usecase", "Upload")
 
 	// sniff mime type
 	mimeType, err := sniffMimeType(params.File)
@@ -24,9 +25,9 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *storageModel
 		return nil, err
 	}
 
-	file, err := u.storageSv.UploadPublicBlob(ctx, params.ToBlobRequest())
+	file, err := u.azBlobSv.UploadPublicBlob(ctx, params.ToBlobRequest())
 	if err != nil {
-		log.Error("service.storageSv.UploadPublicBlob", err)
+		log.Error("usecase.storageSv.UploadPublicBlob", err)
 		return nil, err
 	}
 
@@ -48,7 +49,7 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *storageModel
 		FileName:    fileName,
 		FileSize:    params.File.Size,
 	}); err != nil {
-		log.Error("service.storageSv.Create", err)
+		log.Error("usecase.storageSv.Create", err)
 		return nil, err
 	}
 
@@ -62,14 +63,134 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *storageModel
 	}, nil
 }
 
+func (u *usecase) UploadChunk(ctx context.Context, userId int64, params *storageModel.UploadChunkRequest) (*storageModel.UploadChunkResponse, error) {
+	log := log.New("usecase", "UploadChunk")
+
+	// sniff mime type
+	mimeType, err := sniffMimeType(params.Chunk)
+	if err != nil {
+		return nil, err
+	}
+
+	fileName := params.FileName
+	if fileName == "" {
+		fileName = getUploadedFileName(params.Chunk)
+	}
+
+	// Save to database
+	var chunkId string
+	fileId := params.FileId
+	if fileId == "" {
+		// upload chunk to azure blob
+		file, err := u.azBlobSv.UploadPublicChunk(ctx, params.ToBlobRequest(""))
+		if err != nil {
+			log.Error("usecase.storageSv.UploadPublicChunk", err)
+			return nil, err
+		}
+		chunkId = file.BlockId
+
+		// Create new record
+		fileId = uuid.New().String()
+		filePath := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD, ":file_id", fileId)
+		downloadUrl := fmt.Sprintf("%s/api/v1%s?token=%s", u.cfg.App.Host, filePath, file.Token)
+		if _, err := u.storageSv.Create(ctx, userId, &storageModel.SaveRequest{
+			UUID:        fileId,
+			Type:        mimeType,
+			Token:       file.Token,
+			DownloadUrl: downloadUrl,
+			Ext:         file.Ext,
+			FileName:    fileName,
+			FileSize:    params.TotalChunks,
+			ChunkIds:    []string{file.BlockId},
+		}); err != nil {
+			log.Error("usecase.storageSv.Create", err)
+			return nil, err
+		}
+	} else {
+		// Get file info
+		storage, err := u.storageSv.GetOne(ctx, &storageModel.RequestParams{
+			UUID: params.FileId,
+		})
+		if err != nil {
+			log.Error("usecase.storageSv.GetOne", err)
+			return nil, err
+		}
+		if storage == nil {
+			return nil, fmt.Errorf("file not found")
+		}
+
+		// upload chunk to azure blob
+		file, err := u.azBlobSv.UploadPublicChunk(ctx, params.ToBlobRequest(storage.Token))
+		if err != nil {
+			log.Error("usecase.storageSv.UploadPublicChunk", err)
+			return nil, err
+		}
+		chunkId = file.BlockId
+
+		// Append chunk ids
+		if _, err := u.storageSv.Update(ctx, userId, &storageModel.SaveRequest{
+			UUID:     params.FileId,
+			ChunkIds: append(storage.ChunkIds, file.BlockId),
+		}); err != nil {
+			log.Error("usecase.storageSv.Update", err)
+			return nil, err
+		}
+	}
+
+	return &storageModel.UploadChunkResponse{
+		ChunkId: chunkId,
+		FileId:  fileId,
+	}, nil
+}
+
+func (u *usecase) CommitChunk(ctx context.Context, userId int64, params *storageModel.CommitChunkRequest) (*storageModel.CommitChunkResponse, error) {
+	log := log.New("usecase", "CommitChunk")
+
+	// Validation
+	if params.FileId == "" {
+		return nil, fmt.Errorf("file id is required")
+	}
+
+	// Get file info
+	storage, err := u.storageSv.GetOne(ctx, &storageModel.RequestParams{
+		UUID: params.FileId,
+	})
+	if err != nil {
+		log.Error("usecase.storageSv.GetOne", err)
+		return nil, err
+	}
+	if storage == nil {
+		return nil, fmt.Errorf("file not found")
+	}
+
+	if err := u.azBlobSv.CommitPublicChunk(ctx, &azBlobModel.CommitChunkRequest{
+		SessionId: params.SessionId,
+		Token:     storage.Token,
+		FileName:  storage.FileName,
+		BlockIds:  storage.ChunkIds,
+	}); err != nil {
+		log.Error("usecase.storageSv.CommitPublicChunk", err)
+		return nil, err
+	}
+
+	return &storageModel.CommitChunkResponse{
+		Url:      storage.DownloadUrl,
+		FileId:   storage.UUID,
+		Token:    storage.Token,
+		Ext:      storage.Ext,
+		FileName: storage.FileName,
+		FileSize: storage.FileSize,
+	}, nil
+}
+
 func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *storageModel.UploadWithSecretRequest) (*storageModel.UploadResponse, error) {
-	log := log.New("service", "UploadWithSecret")
+	log := log.New("usecase", "UploadWithSecret")
 
 	secret, err := u.secretSv.GetOne(ctx, &secretModel.RequestParams{
 		AccessToken: params.Secret,
 	})
 	if err != nil {
-		log.Error("service.secretSv.GetOne", err)
+		log.Error("usecase.secretSv.GetOne", err)
 		return nil, err
 	}
 	if secret == nil {
@@ -84,9 +205,9 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *st
 
 	uploadReq := params.ToBlobRequest()
 	uploadReq.SecretId = secret.UUID
-	file, err := u.storageSv.UploadPrivateBlob(ctx, uploadReq)
+	file, err := u.azBlobSv.UploadPrivateBlob(ctx, uploadReq)
 	if err != nil {
-		log.Error("service.storageSv.UploadPrivateBlob", err)
+		log.Error("usecase.storageSv.UploadPrivateBlob", err)
 		return nil, err
 	}
 
@@ -109,7 +230,7 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *st
 		FileSize:    params.File.Size,
 		SecretId:    secret.UUID,
 	}); err != nil {
-		log.Error("service.storageSv.Create", err)
+		log.Error("usecase.storageSv.Create", err)
 		return nil, err
 	}
 
@@ -124,7 +245,7 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *st
 }
 
 func (u *usecase) Download(ctx context.Context, userId int64, params *storageModel.DownloadRequest) (*storageModel.DownloadResponse, error) {
-	log := log.New("service", "Download")
+	log := log.New("usecase", "Download")
 
 	// Validation
 	if params.FileId == "" {
@@ -141,7 +262,7 @@ func (u *usecase) Download(ctx context.Context, userId int64, params *storageMod
 		Token: params.Token,
 	})
 	if err != nil {
-		log.Error("service.storageSv.GetOne", err)
+		log.Error("usecase.storageSv.GetOne", err)
 		return nil, err
 	}
 	if file == nil {
@@ -162,11 +283,11 @@ func (u *usecase) Download(ctx context.Context, userId int64, params *storageMod
 		downloadFileName += file.Ext
 	}
 	downloadFileName = path.Join("public", downloadFileName)
-	sas, err := u.storageSv.DownloadSAS(ctx, &storageModel.DownloadSASRequest{
+	sas, err := u.azBlobSv.DownloadSAS(ctx, &azBlobModel.DownloadSASRequest{
 		FileName: downloadFileName,
 	})
 	if err != nil {
-		log.Error("service.storageSv.DownloadSAS", err)
+		log.Error("usecase.storageSv.DownloadSAS", err)
 		return nil, err
 	}
 
@@ -176,7 +297,7 @@ func (u *usecase) Download(ctx context.Context, userId int64, params *storageMod
 }
 
 func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *storageModel.DownloadWithSecretRequest) (*storageModel.DownloadResponse, error) {
-	log := log.New("service", "DownloadWithSecret")
+	log := log.New("usecase", "DownloadWithSecret")
 
 	// Validation
 	if params.FileId == "" {
@@ -193,7 +314,7 @@ func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *
 		Token: params.Token,
 	})
 	if err != nil {
-		log.Error("service.storageSv.GetOne", err)
+		log.Error("usecase.storageSv.GetOne", err)
 		return nil, err
 	}
 	if file == nil {
@@ -205,7 +326,7 @@ func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *
 		AccessToken: params.Secret,
 	})
 	if err != nil {
-		log.Error("service.secretSv.GetOne", err)
+		log.Error("usecase.secretSv.GetOne", err)
 		return nil, err
 	}
 	if secret == nil {
@@ -226,11 +347,11 @@ func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *
 		downloadFileName += file.Ext
 	}
 	downloadFileName = path.Join("private", file.SecretId, downloadFileName)
-	sas, err := u.storageSv.DownloadSAS(ctx, &storageModel.DownloadSASRequest{
+	sas, err := u.azBlobSv.DownloadSAS(ctx, &azBlobModel.DownloadSASRequest{
 		FileName: downloadFileName,
 	})
 	if err != nil {
-		log.Error("service.storageSv.DownloadSAS", err)
+		log.Error("usecase.storageSv.DownloadSAS", err)
 		return nil, err
 	}
 
@@ -239,7 +360,7 @@ func (u *usecase) DownloadWithSecret(ctx context.Context, userId int64, params *
 	}, nil
 }
 
-func sniffMimeType(file *multipart.FileHeader) (string, error) {
+func sniffMimeType(file *xtype.File) (string, error) {
 	log := log.New("usecase", "sniffMimeType")
 
 	reader, err := file.Open()
@@ -258,7 +379,7 @@ func sniffMimeType(file *multipart.FileHeader) (string, error) {
 	return mimeType.MediaType(), nil
 }
 
-func getUploadedFileName(file *multipart.FileHeader) string {
+func getUploadedFileName(file *xtype.File) string {
 	var fileName string
 	ext := path.Ext(file.Filename)
 	fileName = strings.ReplaceAll(file.Filename, ext, "")
