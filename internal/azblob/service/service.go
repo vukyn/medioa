@@ -101,7 +101,7 @@ func (s *service) UploadPrivateBlob(ctx context.Context, req *models.UploadBlobR
 	}, nil
 }
 
-// Upload to public Blob Storage with chunk
+// Upload to public Blob Storage by chunk
 // https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/storage/azblob/blockblob/examples_test.go
 func (s *service) UploadPublicChunk(ctx context.Context, req *models.UploadChunkRequest) (*models.UploadChunkResponse, error) {
 	log := log.New("service", "UploadPublicChunk")
@@ -145,11 +145,12 @@ func (s *service) UploadPublicChunk(ctx context.Context, req *models.UploadChunk
 		Token:    token,
 		BlockId:  blockId,
 		FileName: blobName,
-		Ext:      path.Ext(req.Chunk.Filename),
+		Ext:      path.Ext(req.FileName),
 		Url:      path.Join(s.cfg.AzBlob.Host, s.cfg.Storage.Container, blobName),
 	}, nil
 }
 
+// Commit all public chunks to Blob Storage
 func (s *service) CommitPublicChunk(ctx context.Context, req *models.CommitChunkRequest) error {
 	log := log.New("service", "CommitPublicChunk")
 
