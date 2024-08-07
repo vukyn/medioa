@@ -361,7 +361,7 @@
 				}
 			});
 
-			$("#uploadForm").on("submit", function (event) {
+			$("#uploadForm").on("submit", async (event) => {
 				event.preventDefault();
 
 				var fileName = $("#fileNameInput").val();
@@ -378,20 +378,15 @@
 						showError(`Secret token is not supported for large files (Max: ${maxSize >> 20} MB).`);
 						return;
 					}
-					// showError(`File size exceeds the limit of ${maxSize >> 20} MB`);
-					// return;
-					handleUploadChunkFile(fileInput, fileName, secret).then(() => {
-						console.log("done");
-						// reset
-						$("#resetButton").trigger("click");
-					});
+					await handleUploadChunkFile(fileInput, fileName, secret);
 				} else {
 					handleUploadFile(fileInput, fileName, secret).then(() => {
-						console.log("done");
 						// reset
 						$("#resetButton").trigger("click");
 					});
 				}
+
+				$("#resetButton").trigger("click");
 			});
 
 			$("#createSecretForm").submit(function (event) {
@@ -854,168 +849,134 @@
 					},
 				});
 			}
-			function handleUploadChunkFile(fileInput, fileName, secret) {
-				const chunkSize = 5 << 20; // 5MB chunks
-				var isDone = false;
-				var fileId = "";
-				var file = fileInput.files[0];
-				const totalChunks = Math.ceil(file.size / chunkSize);
 
-				let uploadNextChunk = (chunkIndex) => {
-					return new Promise(function (resolve, reject) {
-						var start = chunkIndex * chunkSize;
-						var end = Math.min(start + chunkSize, file.size);
-						var chunk = file.slice(start, end);
-						uploadChunk(fileId, chunkIndex, totalChunks, chunk, file.name, "")
-							.then((response) => {
-								if (response.success) {
-									return resolve(response.data);
-								} else {
-									return reject(`${response.error.code}: ${response.error.message}`);
-								}
-							})
-							.catch((error) => {
-								return reject(error);
-							});
-					});
+			const handleUploadChunkFile = async (fileInput, fileName, secret) => {
+				const chunkSize = 5 << 20; // 5MB chunks
+				let fileId = "";
+				const file = fileInput.files[0];
+				const totalChunks = Math.ceil(file.size / chunkSize);
+				const hasSecret = secret !== "";
+
+				const uploadNextChunk = async (chunkIndex) => {
+					const start = chunkIndex * chunkSize;
+					const end = Math.min(start + chunkSize, file.size);
+					const chunk = file.slice(start, end);
+					try {
+						return await uploadChunk(fileId, chunkIndex, totalChunks, chunk, file.name, secret);
+					} catch (error) {
+						throw error;
+					}
 				};
 
-				let uploadChunksRecursively = (chunkIndex, totalChunks) => {
+				const uploadChunksRecursively = async (chunkIndex) => {
 					if (chunkIndex < totalChunks) {
-						return uploadNextChunk(chunkIndex)
-							.then((response) => {
-								fileId = response.file_id;
-								return uploadChunksRecursively(chunkIndex + 1, totalChunks);
-							})
-							.catch((error) => {
-								return Promise.reject(error);
-							});
+						try {
+							const response = await uploadNextChunk(chunkIndex);
+							fileId = response.file_id;
+							return await uploadChunksRecursively(chunkIndex + 1);
+						} catch (error) {
+							throw error;
+						}
 					} else {
-						// All chunks uploaded successfully
 						return commitChunk(fileId);
 					}
 				};
 
-				uploadChunksRecursively(0, totalChunks)
-					.then((response) => {
-						if (response.error) {
-							showError(`${response.error.code}: ${response.error.message}`);
-							return;
-						}
-						showSuccess("File uploaded successfully.");
-						var fileId = response.data.file_id;
-						var fileName = response.data.file_name;
-						var token = response.data.token;
-						var apiDownloadUrl = response.data.url;
-						var uploadedAt = new Date().toLocaleString();
-						var hasSecret = secret !== "";
-						if (secret === "") {
-							$.ajax({
-								url: response.data.url,
+				try {
+					const { file_id: fileId, file_name: fileName, token, url: apiDownloadUrl } = await uploadChunksRecursively(0);
+					showSuccess("File uploaded successfully.");
+
+					const uploadedAt = new Date().toLocaleString();
+
+					if (!hasSecret) {
+						try {
+							const downloadResponse = await $.ajax({
+								url: apiDownloadUrl,
 								type: "GET",
-								success: function (downloadResponse) {
-									var actualDownloadUrl = downloadResponse.data.url;
-
-									// Save file info to local storage
-									saveFileToLocalStorage(
-										fileId,
-										fileName,
-										token,
-										apiDownloadUrl,
-										actualDownloadUrl,
-										uploadedAt,
-										hasSecret
-									);
-
-									// Update the table
-									addFileToTable(fileId, fileName, token, apiDownloadUrl, actualDownloadUrl, uploadedAt, hasSecret);
-								},
-								error: function () {
-									showError("An error occurred while retrieving the download link.");
-								},
 							});
-						} else {
+							const actualDownloadUrl = downloadResponse.data.url;
+
 							// Save file info to local storage
-							saveFileToLocalStorage(fileId, fileName, token, apiDownloadUrl, "", uploadedAt, hasSecret);
+							saveFileToLocalStorage(fileId, fileName, token, apiDownloadUrl, actualDownloadUrl, uploadedAt, hasSecret);
 
 							// Update the table
-							addFileToTable(fileId, fileName, token, apiDownloadUrl, "", uploadedAt, hasSecret);
+							addFileToTable(fileId, fileName, token, apiDownloadUrl, actualDownloadUrl, uploadedAt, hasSecret);
+						} catch (error) {
+							showError("An error occurred while retrieving the download link.");
 						}
+					} else {
+						// Save file info to local storage
+						saveFileToLocalStorage(fileId, fileName, token, apiDownloadUrl, "", uploadedAt, hasSecret);
 
-						return Promise.resolve();
-					})
-					.catch((error) => {
-						showError(error);
-					});
-			}
-			function uploadChunk(fileId, chunkIndex, totalChunks, chunk, fileName, secret) {
-				var formData = new FormData();
+						// Update the table
+						addFileToTable(fileId, fileName, token, apiDownloadUrl, "", uploadedAt, hasSecret);
+					}
+				} catch (error) {
+					showError(error);
+				}
+			};
+
+			const uploadChunk = async (fileId, chunkIndex, totalChunks, chunk, fileName, secret) => {
+				let formData = new FormData();
 				formData.append("file_id", fileId);
 				formData.append("chunk", chunk);
 				formData.append("chunk_index", chunkIndex);
 				formData.append("total_chunks", totalChunks);
 				formData.append("file_name", fileName);
 
-				var endpoint;
-				if (socket === undefined || sessionId === "") {
-					if (secret === "") {
-						endpoint = "/api/v1/storage/upload/stage";
-					} else {
-						endpoint = `/api/v1/storage/secret/upload/stage?secret=${secret}`;
-					}
+				let endpoint;
+				if (typeof socket === "undefined" || sessionId === "") {
+					endpoint = secret === "" ? "/api/v1/storage/upload/stage" : `/api/v1/storage/secret/upload/stage?secret=${secret}`;
 				} else {
-					if (secret === "") {
-						endpoint = `/api/v1/storage/upload/stage?id=${sessionId}`;
-					} else {
-						endpoint = `/api/v1/storage/secret/upload/stage?id=${sessionId}&secret=${secret}`;
-					}
+					endpoint =
+						secret === ""
+							? `/api/v1/storage/upload/stage?id=${sessionId}`
+							: `/api/v1/storage/secret/upload/stage?id=${sessionId}&secret=${secret}`;
 				}
 
-				return $.ajax({
-					url: endpoint,
-					type: "POST",
-					data: formData,
-					contentType: false,
-					processData: false,
-					success: function (response) {
-						if (response.error) {
-							return { success: false, error: `${response.error.code}: ${response.error.message}` };
-						}
-						return { success: true, data: response.data };
-					},
-					error: function () {
-						return { success: false, error: "An error occurred while uploading the file." };
-					},
-				});
-			}
-			function commitChunk(fileId) {
-				var formData = {
+				try {
+					const response = await $.ajax({
+						url: endpoint,
+						type: "POST",
+						data: formData,
+						contentType: false,
+						processData: false,
+					});
+					if (response.success) {
+						return response.data;
+					} else {
+						throw `${response.error.code}: ${response.error.message}`;
+					}
+				} catch (error) {
+					throw "An error occurred while uploading the file.";
+				}
+			};
+
+			const commitChunk = async (fileId) => {
+				let formData = {
 					file_id: fileId,
 				};
 
-				var endpoint;
-				if (socket === undefined || sessionId === "") {
-					endpoint = "/api/v1/storage/upload/commit";
-				} else {
-					endpoint = `/api/v1/storage/upload/commit?id=${sessionId}`;
+				const endpoint =
+					typeof socket === "undefined" || sessionId === ""
+						? "/api/v1/storage/upload/commit"
+						: `/api/v1/storage/upload/commit?id=${sessionId}`;
+				try {
+					const response = await $.ajax({
+						url: endpoint,
+						type: "POST",
+						contentType: "application/json",
+						data: JSON.stringify(formData),
+					});
+					if (response.success) {
+						return response.data;
+					} else {
+						throw `${response.error.code}: ${response.error.message}`;
+					}
+				} catch (error) {
+					throw "An error occurred while committing the file.";
 				}
-
-				return $.ajax({
-					url: endpoint,
-					type: "POST",
-					contentType: "application/json",
-					data: JSON.stringify(formData),
-					success: function (response) {
-						if (response.error) {
-							return { success: false, error: `${response.error.code}: ${response.error.message}` };
-						}
-						return { success: true, data: response.data };
-					},
-					error: function () {
-						return { success: false, error: "An error occurred while uploading the file." };
-					},
-				});
-			}
+			};
 
 			$(document).ready(function () {
 				// Load files from local storage on page load
