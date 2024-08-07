@@ -41,6 +41,11 @@ type CommitChunkRequest struct {
 	BlockIds  []string
 }
 
+type CommitChunkRsponse struct {
+	TotalBlock int64
+	FileSize   int64
+}
+
 type DownloadSASRequest struct {
 	FileName string
 }

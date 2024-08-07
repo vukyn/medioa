@@ -16,14 +16,15 @@ type Storage struct {
 	DownloadUrl string    `gorm:"column:download_url" bson:"download_url"`
 	Type        string    `gorm:"column:type" bson:"type"`
 	Token       string    `gorm:"column:token;default:(-)" bson:"token"`
-	LifeTime    int       `gorm:"column:life_time;default:(-)" bson:"life_time"`
+	LifeTime    int64     `gorm:"column:life_time;default:(-)" bson:"life_time"`
 	FileName    string    `gorm:"column:file_name" bson:"file_name"`
 	FileSize    int64     `gorm:"column:file_size" bson:"file_size"`
 	Ext         string    `gorm:"column:ext" bson:"ext"`
 	SecretId    string    `gorm:"column:secret_id" bson:"secret_id"`
 	CreatedBy   int64     `gorm:"column:created_by" bson:"created_by"`
 	CreatedAt   time.Time `gorm:"autoCreateTime" bson:"created_at"`
-	ChunkIds    []string  `gorm:"column:chunk_ids" bson:"chunk_ids"`
+	ChunkIds    *[]string `gorm:"column:chunk_ids" bson:"chunk_ids"`
+	TotalChunks int64     `gorm:"column:total_chunks" bson:"total_chunks"`
 }
 
 func (s *Storage) TableName() string {
@@ -31,6 +32,11 @@ func (s *Storage) TableName() string {
 }
 
 func (e *Storage) Export() *models.Response {
+	chunkIds := make([]string, 0)
+	if e.ChunkIds != nil {
+		chunkIds = *e.ChunkIds
+	}
+
 	return &models.Response{
 		Id:          e.Id,
 		UUID:        e.UUID,
@@ -44,7 +50,8 @@ func (e *Storage) Export() *models.Response {
 		SecretId:    e.SecretId,
 		CreatedBy:   e.CreatedBy,
 		CreatedAt:   e.CreatedAt,
-		ChunkIds:    e.ChunkIds,
+		ChunkIds:    chunkIds,
+		TotalChunks: e.TotalChunks,
 	}
 }
 
@@ -71,6 +78,7 @@ func (e *Storage) ParseFromSaveRequest(req *models.SaveRequest) {
 		e.CreatedBy = req.CreatedBy
 		e.CreatedAt = req.CreatedAt
 		e.ChunkIds = req.ChunkIds
+		e.TotalChunks = req.TotalChunks
 	}
 }
 
@@ -142,8 +150,15 @@ func (e *Storage) ToBson() bson.D {
 	if !e.CreatedAt.IsZero() {
 		d = append(d, bson.E{Key: "created_at", Value: e.CreatedAt.UnixMilli()})
 	}
-	if len(e.ChunkIds) > 0 {
-		d = append(d, bson.E{Key: "chunk_ids", Value: e.ChunkIds})
+	if e.ChunkIds != nil {
+		if len(*e.ChunkIds) > 0 {
+			d = append(d, bson.E{Key: "chunk_ids", Value: e.ChunkIds})
+		} else {
+			d = append(d, bson.E{Key: "chunk_ids", Value: []string{}})
+		}
+	}
+	if e.TotalChunks > 0 {
+		d = append(d, bson.E{Key: "total_chunks", Value: e.TotalChunks})
 	}
 	return d
 }

@@ -151,17 +151,17 @@ func (s *service) UploadPublicChunk(ctx context.Context, req *models.UploadChunk
 }
 
 // Commit all public chunks to Blob Storage
-func (s *service) CommitPublicChunk(ctx context.Context, req *models.CommitChunkRequest) error {
+func (s *service) CommitPublicChunk(ctx context.Context, req *models.CommitChunkRequest) (*models.CommitChunkRsponse, error) {
 	log := log.New("service", "CommitPublicChunk")
 
 	if req.Token == "" {
-		return fmt.Errorf("missing token before commit chunk")
+		return nil, fmt.Errorf("missing token before commit chunk")
 	}
 	if req.FileName == "" {
-		return fmt.Errorf("missing file name before commit chunk")
+		return nil, fmt.Errorf("missing file name before commit chunk")
 	}
 	if len(req.BlockIds) == 0 {
-		return fmt.Errorf("missing block ids before commit chunk")
+		return nil, fmt.Errorf("missing block ids before commit chunk")
 	}
 
 	// init new block blob connection
@@ -170,10 +170,25 @@ func (s *service) CommitPublicChunk(ctx context.Context, req *models.CommitChunk
 	blobClient := s.lib.Blob.Container.NewBlockBlobClient(blobName)
 	if _, err := blobClient.CommitBlockList(ctx, req.BlockIds, opts); err != nil {
 		log.Error("blobClient.CommitBlockList", err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	var fileSize int64
+	var totalBlock int64
+	getBlock, err := blobClient.GetBlockList(ctx, blockblob.BlockListTypeCommitted, nil)
+	if err != nil {
+		log.Error("blobClient.GetBlockList", err)
+		return nil, err
+	}
+	for _, block := range getBlock.BlockList.CommittedBlocks {
+		fileSize += *block.Size
+		totalBlock++
+	}
+
+	return &models.CommitChunkRsponse{
+		FileSize:   fileSize,
+		TotalBlock: totalBlock,
+	}, nil
 }
 
 // Download from Blob Storage with SAS (Shared Access Signature)

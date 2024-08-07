@@ -100,8 +100,7 @@ func (u *usecase) UploadChunk(ctx context.Context, userId int64, params *storage
 			DownloadUrl: downloadUrl,
 			Ext:         file.Ext,
 			FileName:    fileName,
-			FileSize:    params.TotalChunks,
-			ChunkIds:    []string{file.BlockId},
+			ChunkIds:    &[]string{file.BlockId},
 		}); err != nil {
 			log.Error("usecase.storageSv.Create", err)
 			return nil, err
@@ -128,9 +127,10 @@ func (u *usecase) UploadChunk(ctx context.Context, userId int64, params *storage
 		chunkId = file.BlockId
 
 		// Append chunk ids
+		chunkIds := append(storage.ChunkIds, file.BlockId)
 		if _, err := u.storageSv.Update(ctx, userId, &storageModel.SaveRequest{
 			UUID:     params.FileId,
-			ChunkIds: append(storage.ChunkIds, file.BlockId),
+			ChunkIds: &chunkIds,
 		}); err != nil {
 			log.Error("usecase.storageSv.Update", err)
 			return nil, err
@@ -163,13 +163,25 @@ func (u *usecase) CommitChunk(ctx context.Context, userId int64, params *storage
 		return nil, fmt.Errorf("file not found")
 	}
 
-	if err := u.azBlobSv.CommitPublicChunk(ctx, &azBlobModel.CommitChunkRequest{
+	res, err := u.azBlobSv.CommitPublicChunk(ctx, &azBlobModel.CommitChunkRequest{
 		SessionId: params.SessionId,
 		Token:     storage.Token,
 		FileName:  storage.FileName,
 		BlockIds:  storage.ChunkIds,
-	}); err != nil {
+	})
+	if err != nil {
 		log.Error("usecase.storageSv.CommitPublicChunk", err)
+		return nil, err
+	}
+
+	// Update file info
+	if _, err := u.storageSv.Update(ctx, userId, &storageModel.SaveRequest{
+		UUID:        params.FileId,
+		FileSize:    res.FileSize,
+		TotalChunks: res.TotalBlock,
+		ChunkIds:    &[]string{},
+	}); err != nil {
+		log.Error("usecase.storageSv.Update", err)
 		return nil, err
 	}
 
@@ -179,7 +191,7 @@ func (u *usecase) CommitChunk(ctx context.Context, userId int64, params *storage
 		Token:    storage.Token,
 		Ext:      storage.Ext,
 		FileName: storage.FileName,
-		FileSize: storage.FileSize,
+		FileSize: res.FileSize,
 	}, nil
 }
 
