@@ -5,11 +5,13 @@ import (
 	"medioa/config"
 	"medioa/constants"
 	"net/http"
+	"strconv"
 
 	"medioa/internal/storage/models"
 	"medioa/internal/storage/usecase"
 	commonModel "medioa/models"
 	"medioa/pkg/xhttp"
+	"medioa/pkg/xtype"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,6 +32,8 @@ func InitHandler(cfg *config.Config, lib *commonModel.Lib, usecase usecase.IUsec
 
 func (h Handler) MapRoutes(group *gin.RouterGroup) {
 	group.POST(constants.STORAGE_ENDPOINT_UPLOAD, h.Upload)
+	group.POST(constants.STORAGE_ENDPOINT_UPLOAD_STAGE, h.UploadChunk)
+	group.POST(constants.STORAGE_ENDPOINT_UPLOAD_COMMIT, h.CommitChunk)
 	group.GET(constants.STORAGE_ENDPOINT_DOWNLOAD, h.Download)
 	group.POST(constants.STORAGE_ENDPOINT_UPLOAD_WITH_SECRET, h.UploadWithSecret)
 	group.GET(constants.STORAGE_ENDPOINT_DOWNLOAD_WITH_SECRET, h.DownloadWithSecret)
@@ -47,7 +51,7 @@ func (h Handler) MapRoutes(group *gin.RouterGroup) {
 //	@Accept			mpfd
 //	@Produce		json
 //	@Param			id			query		string	false	"session id"
-//	@Param			chunk		formData	file	true	"binary file"
+//	@Param			file		formData	file	true	"binary file"
 //	@Param			file_name	formData	string	false	"file name"
 //	@Success		201			{object}	models.UploadResponse
 //	@Router			/storage/upload [post]
@@ -57,7 +61,7 @@ func (h Handler) Upload(ctx *gin.Context) {
 
 	id := ctx.Query("id")
 	fileName := ctx.PostForm("file_name")
-	file, err := ctx.FormFile("chunk")
+	file, err := ctx.FormFile("file")
 	if err != nil {
 		if err.Error() == "multipart: NextPart: http: request body too large" {
 			xhttp.BadRequest(ctx, fmt.Errorf("file size too large (max: %dMB)", maxSize))
@@ -67,11 +71,106 @@ func (h Handler) Upload(ctx *gin.Context) {
 		return
 	}
 	userId := int64(1)
-	res, err := h.usecase.Upload(ctx, userId, &models.UploadRequest{
+	res, err := h.usecase.Upload(ctx, userId, &models.UploadFileRequest{
 		SessionId: id,
-		File:      file,
+		File:      xtype.NewFile(file),
 		FileName:  fileName,
 	})
+	if err != nil {
+		xhttp.BadRequest(ctx, err)
+		return
+	}
+
+	xhttp.Created(ctx, res)
+}
+
+// UploadChunk godoc
+//
+//	@Security		ApiKeyAuth
+//	@Summary		Upload media by chunk
+//	@Description	Upload media file (images, videos, etc.)
+//	@Tags			Storage
+//	@Accept			mpfd
+//	@Produce		json
+//	@Param			id				query		string	false	"session id"
+//	@Param			chunk			formData	file	true	"binary chunk"
+//	@Param			chunk_index		formData	int64	true	"chunk index"
+//	@Param			total_chunks	formData	int64	true	"total chunk"
+//	@Param			file_id			formData	string	false	"file id"
+//	@Param			file_name		formData	string	false	"file name"
+//	@Success		201				{object}	models.UploadChunkResponse
+//	@Router			/storage/upload/stage [post]
+func (h Handler) UploadChunk(ctx *gin.Context) {
+	maxSize := h.cfg.Upload.MaxSizeMB
+	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, maxSize<<20)
+
+	id := ctx.Query("id")
+	fileId := ctx.PostForm("file_id")
+	fileName := ctx.PostForm("file_name")
+	chunk, err := ctx.FormFile("chunk")
+	if err != nil {
+		if err.Error() == "multipart: NextPart: http: request body too large" {
+			xhttp.BadRequest(ctx, fmt.Errorf("chunk size too large (max: %dMB)", maxSize))
+		} else {
+			xhttp.BadRequest(ctx, err)
+		}
+		return
+	}
+
+	chunkIndexStr := ctx.PostForm("chunk_index")
+	chunkIndex, err := strconv.ParseInt(chunkIndexStr, 10, 64)
+	if err != nil {
+		xhttp.BadRequest(ctx, fmt.Errorf("invalid chunk index"))
+		return
+	}
+
+	totalChunkStr := ctx.PostForm("total_chunks")
+	totalChunks, err := strconv.ParseInt(totalChunkStr, 10, 64)
+	if err != nil {
+		xhttp.BadRequest(ctx, fmt.Errorf("invalid total chunk"))
+		return
+	}
+
+	userId := int64(1)
+	res, err := h.usecase.UploadChunk(ctx, userId, &models.UploadChunkRequest{
+		SessionId:   id,
+		FileId:      fileId,
+		FileName:    fileName,
+		Chunk:       xtype.NewFile(chunk),
+		ChunkIndex:  chunkIndex,
+		TotalChunks: totalChunks,
+	})
+	if err != nil {
+		xhttp.BadRequest(ctx, err)
+		return
+	}
+
+	xhttp.Created(ctx, res)
+}
+
+// CommitChunk godoc
+//
+//	@Security		ApiKeyAuth
+//	@Summary		Commit upload media chunk
+//	@Description	Commit all chunks to complete upload media file
+//	@Tags			Storage
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		query		string						false	"session id"
+//	@Param			body	body		models.CommitChunkRequest	true	"commit chunk request"
+//	@Success		200		{object}	models.CommitChunkResponse
+//	@Router			/storage/upload/commit [post]
+func (h Handler) CommitChunk(ctx *gin.Context) {
+	id := ctx.Query("id")
+	req := &models.CommitChunkRequest{}
+	if err := ctx.ShouldBindJSON(req); err != nil {
+		xhttp.BadRequest(ctx, err)
+		return
+	}
+	req.SessionId = id
+
+	userId := int64(1)
+	res, err := h.usecase.CommitChunk(ctx, userId, req)
 	if err != nil {
 		xhttp.BadRequest(ctx, err)
 		return
@@ -119,13 +218,13 @@ func (h Handler) Download(ctx *gin.Context) {
 //	@Param			id			query		string	false	"session id"
 //	@Param			secret		query		string	true	"secret"
 //	@Param			chunk		formData	file	true	"binary file"
-//	@Param			filename	formData	string	false	"file name"
+//	@Param			file_name	formData	string	false	"file name"
 //	@Success		201			{object}	models.UploadResponse
 //	@Router			/storage/secret/upload [post]
 func (h Handler) UploadWithSecret(ctx *gin.Context) {
 	id := ctx.Query("id")
 	secret := ctx.Query("secret")
-	fileName := ctx.PostForm("filename")
+	fileName := ctx.PostForm("file_name")
 	file, err := ctx.FormFile("chunk")
 	if err != nil {
 		xhttp.BadRequest(ctx, err)
@@ -136,7 +235,7 @@ func (h Handler) UploadWithSecret(ctx *gin.Context) {
 	res, err := h.usecase.UploadWithSecret(ctx, userId, &models.UploadWithSecretRequest{
 		SessionId: id,
 		Secret:    secret,
-		File:      file,
+		File:      xtype.NewFile(file),
 		FileName:  fileName,
 	})
 	if err != nil {

@@ -16,9 +16,4 @@ type IService interface {
 	Update(ctx context.Context, userId int64, params *models.SaveRequest) (*models.Response, error)
 	UpdateMany(ctx context.Context, userId int64, params []*models.SaveRequest) (int64, error)
 	Upsert(ctx context.Context, userId int64, params *models.SaveRequest) (*models.Response, error)
-
-	// Blob
-	UploadPublicBlob(ctx context.Context, req *models.UploadBlobRequest) (*models.UploadBlobResponse, error)
-	UploadPrivateBlob(ctx context.Context, req *models.UploadBlobRequest) (*models.UploadBlobResponse, error)
-	DownloadSAS(ctx context.Context, req *models.DownloadSASRequest) (*models.DownloadSASResponse, error)
 }

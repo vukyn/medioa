@@ -19,9 +19,9 @@ type RequestParams struct {
 	Type        string
 	Token       string
 	Ext         string
-	LifeTime    int
+	LifeTime    int64
 	SecretId    string
-	CreatedBy   int
+	CreatedBy   int64
 }
 
 func (r *RequestParams) trimSpace() {
@@ -61,13 +61,15 @@ type Response struct {
 	DownloadUrl string    `json:"download_url"`
 	Type        string    `json:"type"`
 	Token       string    `json:"token"`
-	LifeTime    int       `json:"life_time"`
+	LifeTime    int64     `json:"life_time"`
 	FileName    string    `json:"file_name"`
 	FileSize    int64     `json:"file_size"`
 	Ext         string    `json:"ext"`
 	SecretId    string    `json:"secret_id"`
 	CreatedBy   int64     `json:"created_by"`
 	CreatedAt   time.Time `json:"created_at"`
+	ChunkIds    []string  `json:"chunk_ids"`
+	TotalChunks int64     `json:"total_chunks"`
 }
 
 type SaveRequest struct {
@@ -80,7 +82,9 @@ type SaveRequest struct {
 	FileSize    int64
 	Ext         string
 	SecretId    string
-	LifeTime    int
+	LifeTime    int64
+	ChunkIds    *[]string
+	TotalChunks int64
 	CreatedBy   int64
 	CreatedAt   time.Time
 }
@@ -88,4 +92,9 @@ type SaveRequest struct {
 type ListPaging struct {
 	commonModel.ListPaging
 	Records []*Response
+}
+
+type AddChunkRequest struct {
+	Id      string
+	ChunkId string
 }

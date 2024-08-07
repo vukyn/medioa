@@ -2,6 +2,7 @@ package server
 
 import (
 	"medioa/config"
+	initAzBlob "medioa/internal/azblob/init"
 	initSecret "medioa/internal/secret/init"
 	initStorage "medioa/internal/storage/init"
 	"medioa/pkg/log"
@@ -16,11 +17,14 @@ import (
 )
 
 func (s *Server) initHandler(group *gin.RouterGroup) {
+	// Init azblob
+	azBlob := initAzBlob.NewInit(s.cfg, s.lib)
+
 	// Init secret
 	secret := initSecret.NewInit(s.cfg, s.lib)
 
 	// Init storage
-	storage := initStorage.NewInit(s.cfg, s.lib, secret)
+	storage := initStorage.NewInit(s.cfg, s.lib, secret, azBlob)
 	storage.Handler.MapRoutes(group)
 }
 
