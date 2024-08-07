@@ -561,52 +561,53 @@
 				});
 			}
 			function addFileToTable(fileId, fileName, token, downloadApi, downloadLink, uploadedAt, hasSecret) {
-				var tdFileId = `<td style="display:none;">${fileId}</td>`;
-				var tdFileName = `<td>${fileName}</td>`;
-				var tdToken = `<td style="display:none;">${token}</td>`;
-				var tdDownloadLink = `<td></td>`;
-				if (downloadLink !== "") {
-					tdDownloadLink = `<td>
-						<a href="${downloadLink}" target="_blank">link</a>
-						<i class="fas fa-copy copy-url-icon" style="cursor: pointer;" data-url="${downloadLink}"></i>
-					</td>`;
-				}
-				var tdUploadAt = `<td>${uploadedAt}</td>`;
-				var tdHasSecret = `<td>${hasSecret ? "Yes" : "No"}</td>`;
-				var btnRefresh = `<button class="btn btn-info refresh-row-btn" data-toggle="tooltip" title="Refresh link"><i class="fas fa-sync-alt"></i></button>`;
-				var btnDelete = `<button class="btn btn-danger delete-row-btn" data-toggle="tooltip" title="Delete"><i class="fas fa-trash-alt"></i></button>`;
-				var btnSecret = `<button class="btn btn-warning secret-row-btn" data-toggle="tooltip" title="Unlock File"><i class="fas fa-key"></i></button>`;
-				var row = `<tr>
+				const tdFileId = `<td style="display:none;">${fileId}</td>`;
+				const tdFileName = `<td>${fileName}</td>`;
+				const tdToken = `<td style="display:none;">${token}</td>`;
+				const tdDownloadLink = downloadLink
+					? `<td>
+							<a href="${downloadLink}" target="_blank">link</a>
+							<i class="fas fa-copy copy-url-icon" style="cursor: pointer;" data-url="${downloadLink}"></i>
+						</td>`
+					: `<td></td>`;
+				const tdUploadAt = `<td>${uploadedAt}</td>`;
+				const tdHasSecret = `<td>${hasSecret ? "Yes" : "No"}</td>`;
+				const btnRefresh = `<button class="btn btn-info refresh-row-btn" data-toggle="tooltip" title="Refresh link"><i class="fas fa-sync-alt"></i></button>`;
+				const btnDelete = `<button class="btn btn-danger delete-row-btn" data-toggle="tooltip" title="Delete"><i class="fas fa-trash-alt"></i></button>`;
+				const btnSecret = `<button class="btn btn-warning secret-row-btn" data-toggle="tooltip" title="Unlock File"><i class="fas fa-key"></i></button>`;
+				const actionButtons = hasSecret ? btnSecret : btnRefresh;
+
+				const row = `<tr>
 					${tdFileId}
 					${tdFileName}
 					${tdToken}
 					${tdDownloadLink}
 					${tdUploadAt}
 					${tdHasSecret}
-			                 <td>
+					<td>
 						<div class="action-buttons-container">
-							${hasSecret ? btnSecret : btnRefresh}
+							${actionButtons}
 							${btnDelete}
-			     				</div>
-			                 </td>
-			             </tr>`;
+						</div>
+					</td>
+				</tr>`;
 
-				$("#filesTable tbody").append(row);
+				$("#filesTable tbody").prepend(row);
 				$("#filesTable").show();
 
 				// Attach event listeners to new buttons
 				$(".copy-url-icon")
-					.last()
+					.first()
 					.click(function () {
-						var url = $(this).data("url");
+						const url = $(this).data("url");
 						copyClipboard(url);
 					});
 
 				$(".refresh-row-btn")
-					.last()
+					.first()
 					.click(function () {
-						var row = $(this).closest("tr");
-						var fileId = row.find("td:first").text();
+						const row = $(this).closest("tr");
+						const fileId = row.find("td:first").text();
 
 						$.ajax({
 							url: downloadApi,
@@ -617,7 +618,7 @@
 									return;
 								}
 
-								var actualDownloadUrl = response.data.url;
+								const actualDownloadUrl = response.data.url;
 
 								// Update download link in local storage
 								updateFileDownloadLinkFromLocalStorage(fileId, actualDownloadUrl);
@@ -637,11 +638,11 @@
 					});
 
 				$(".secret-row-btn")
-					.last()
+					.first()
 					.click(function () {
-						var row = $(this).closest("tr");
-						var fileId = row.find("td:first").text();
-						var token = row.find("td:nth-child(3)").text();
+						const row = $(this).closest("tr");
+						const fileId = row.find("td:first").text();
+						const token = row.find("td:nth-child(3)").text();
 						$("#fileIdInput").val(fileId);
 						$("#fileTokenInput").val(token);
 						$("#secretTokenInput").val("");
@@ -649,10 +650,10 @@
 					});
 
 				$(".delete-row-btn")
-					.last()
+					.first()
 					.click(function () {
-						var row = $(this).closest("tr");
-						var fileId = row.find("td:first").text();
+						const row = $(this).closest("tr");
+						const fileId = row.find("td:first").text();
 						deleteFileFromLocalStorage(fileId);
 						row.remove();
 						if ($("#filesTable tbody tr").length === 0) {
