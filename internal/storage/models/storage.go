@@ -6,9 +6,9 @@ import (
 )
 
 type UploadFileRequest struct {
-	SessionId string      `json:"session_id"`
-	File      *xtype.File `json:"file"`
-	FileName  string      `json:"file_name"`
+	SessionId string     `json:"session_id"`
+	File      xtype.File `json:"file"`
+	FileName  string     `json:"file_name"`
 }
 
 func (r *UploadFileRequest) ToBlobRequest() *azBlobModel.UploadBlobRequest {
@@ -19,12 +19,12 @@ func (r *UploadFileRequest) ToBlobRequest() *azBlobModel.UploadBlobRequest {
 }
 
 type UploadChunkRequest struct {
-	SessionId   string      `json:"session_id"`
-	FileId      string      `json:"file_id"`
-	FileName    string      `json:"file_name"`
-	Chunk       *xtype.File `json:"chunk"`
-	ChunkIndex  int64       `json:"chunk_index"`
-	TotalChunks int64       `json:"total_chunks"`
+	SessionId   string     `json:"session_id"`
+	FileId      string     `json:"file_id"`
+	FileName    string     `json:"file_name"`
+	Chunk       xtype.File `json:"chunk"`
+	ChunkIndex  int64      `json:"chunk_index"`
+	TotalChunks int64      `json:"total_chunks"`
 }
 
 func (r *UploadChunkRequest) ToBlobRequest(token string) *azBlobModel.UploadChunkRequest {
@@ -44,7 +44,8 @@ type UploadChunkResponse struct {
 }
 
 type CommitChunkRequest struct {
-	SessionId string `json:"session_id"`
+	SessionId string `json:"session_id" swaggerignore:"true"`
+	Secret    string `json:"secret" swaggerignore:"true"`
 	FileId    string `json:"file_id"`
 }
 
@@ -60,14 +61,37 @@ type CommitChunkResponse struct {
 type UploadWithSecretRequest struct {
 	SessionId string
 	Secret    string
-	File      *xtype.File
+	File      xtype.File
 	FileName  string
 }
 
-func (r *UploadWithSecretRequest) ToBlobRequest() *azBlobModel.UploadBlobRequest {
+func (r *UploadWithSecretRequest) ToBlobRequest(secretId string) *azBlobModel.UploadBlobRequest {
 	return &azBlobModel.UploadBlobRequest{
 		SessionId: r.SessionId,
+		SecretId:  secretId,
 		File:      r.File,
+	}
+}
+
+type UploadChunkWithSecretRequest struct {
+	SessionId   string     `json:"session_id"`
+	Secret      string     `json:"secret"`
+	FileId      string     `json:"file_id"`
+	FileName    string     `json:"file_name"`
+	Chunk       xtype.File `json:"chunk"`
+	ChunkIndex  int64      `json:"chunk_index"`
+	TotalChunks int64      `json:"total_chunks"`
+}
+
+func (r *UploadChunkWithSecretRequest) ToBlobRequest(secretId, token string) *azBlobModel.UploadChunkRequest {
+	return &azBlobModel.UploadChunkRequest{
+		SessionId:   r.SessionId,
+		SecretId:    secretId,
+		Token:       token,
+		FileName:    r.FileName,
+		Chunk:       r.Chunk,
+		ChunkIndex:  r.ChunkIndex,
+		TotalChunks: r.TotalChunks,
 	}
 }
 

@@ -263,7 +263,7 @@ const docTemplate = `{
                     {
                         "type": "file",
                         "description": "binary file",
-                        "name": "chunk",
+                        "name": "file",
                         "in": "formData",
                         "required": true
                     },
@@ -279,6 +279,82 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/medioa_internal_storage_models.UploadResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/storage/secret/upload/stage": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Upload media file (images, videos, etc.)",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Storage"
+                ],
+                "summary": "Upload media by chunk with secret",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session id",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "secret",
+                        "name": "secret",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "binary chunk",
+                        "name": "chunk",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "chunk index",
+                        "name": "chunk_index",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "total chunk",
+                        "name": "total_chunks",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "file id",
+                        "name": "file_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "file name",
+                        "name": "file_name",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/medioa_internal_storage_models.UploadChunkResponse"
                         }
                     }
                 }
@@ -350,13 +426,20 @@ const docTemplate = `{
                 "tags": [
                     "Storage"
                 ],
-                "summary": "Commit upload media chunk",
+                "summary": "Commit upload media chunk with secret",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "session id",
                         "name": "id",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "secret",
+                        "name": "secret",
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "description": "commit chunk request",
@@ -453,9 +536,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "file_id": {
-                    "type": "string"
-                },
-                "session_id": {
                     "type": "string"
                 }
             }

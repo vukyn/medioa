@@ -7,7 +7,7 @@ import (
 type UploadBlobRequest struct {
 	SessionId string
 	SecretId  string
-	File      *xtype.File
+	File      xtype.File
 }
 
 type UploadBlobResponse struct {
@@ -19,11 +19,12 @@ type UploadBlobResponse struct {
 
 type UploadChunkRequest struct {
 	SessionId   string
+	SecretId    string
 	Token       string
 	FileName    string
 	ChunkIndex  int64
 	TotalChunks int64
-	Chunk       *xtype.File
+	Chunk       xtype.File
 }
 
 type UploadChunkResponse struct {
@@ -36,6 +37,7 @@ type UploadChunkResponse struct {
 
 type CommitChunkRequest struct {
 	SessionId string
+	SecretId  string
 	Token     string
 	FileName  string
 	BlockIds  []string
