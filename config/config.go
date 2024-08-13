@@ -94,9 +94,9 @@ func Load() (*Config, error) {
 	parseAzAdConfig(cfg)
 	parseSecretConfig(cfg)
 	parseUploadConfig(cfg)
-	validation(cfg)
+	parseDownloadConfig(cfg)
 
-	return cfg, nil
+	return cfg, validation(cfg)
 }
 
 func parseLogConfig(cfg *Config) {
