@@ -17,15 +17,16 @@ const (
 )
 
 type Config struct {
-	App     AppConfig
-	Log     log.Config
-	Mongo   MongoConfig
-	AzAd    AzAdConfig
-	AzBlob  AzBlobConfig
-	Storage StorageConfig
-	Cors    CorsConfig
-	Secret  SecretConfig
-	Upload  UploadConfig
+	App      AppConfig
+	Log      log.Config
+	Mongo    MongoConfig
+	AzAd     AzAdConfig
+	AzBlob   AzBlobConfig
+	Storage  StorageConfig
+	Cors     CorsConfig
+	Secret   SecretConfig
+	Upload   UploadConfig
+	Download DownloadConfig
 }
 
 type AppConfig struct {
@@ -69,6 +70,10 @@ type SecretConfig struct {
 
 type UploadConfig struct {
 	MaxSizeMB int64
+}
+
+type DownloadConfig struct {
+	Expire int64 // in days
 }
 
 func Load() (*Config, error) {
@@ -145,6 +150,11 @@ func parseSecretConfig(cfg *Config) {
 func parseUploadConfig(cfg *Config) {
 	maxSizeMB, _ := strconv.ParseInt(os.Getenv("UPLOAD_MAX_SIZE_MB"), 10, 64)
 	cfg.Upload.MaxSizeMB = maxSizeMB
+}
+
+func parseDownloadConfig(cfg *Config) {
+	expire, _ := strconv.ParseInt(os.Getenv("DOWNLOAD_EXPIRE"), 10, 64)
+	cfg.Download.Expire = expire
 }
 
 func validation(cfg *Config) error {
@@ -227,6 +237,10 @@ func validation(cfg *Config) error {
 
 	if cfg.Upload.MaxSizeMB <= 0 {
 		return fmt.Errorf("upload max size mb is invalid")
+	}
+
+	if cfg.Download.Expire <= 0 {
+		return fmt.Errorf("download expire is invalid")
 	}
 
 	return nil
