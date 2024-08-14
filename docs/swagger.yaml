@@ -111,6 +111,10 @@ paths:
         name: token
         required: true
         type: string
+      - description: silent response
+        in: query
+        name: silent
+        type: boolean
       produces:
       - application/json
       responses:
@@ -168,6 +172,10 @@ paths:
         name: secret
         required: true
         type: string
+      - description: silent response
+        in: query
+        name: silent
+        type: boolean
       produces:
       - application/json
       responses:

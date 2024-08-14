@@ -51,6 +51,12 @@ const docTemplate = `{
                         "name": "token",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "silent response",
+                        "name": "silent",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -141,6 +147,12 @@ const docTemplate = `{
                         "name": "secret",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "silent response",
+                        "name": "silent",
+                        "in": "query"
                     }
                 ],
                 "responses": {
