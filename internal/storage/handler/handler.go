@@ -196,6 +196,7 @@ func (h Handler) Download(ctx *gin.Context) {
 	userId := int64(1)
 	fileId := ctx.Param("file_id")
 	token := ctx.Query("token")
+	silent := ctx.Query("silent")
 	res, err := h.usecase.Download(ctx, userId, &models.DownloadRequest{
 		FileId: fileId,
 		Token:  token,
@@ -205,7 +206,11 @@ func (h Handler) Download(ctx *gin.Context) {
 		return
 	}
 
-	xhttp.Ok(ctx, res)
+	if silent != "true" {
+		xhttp.Redirect(ctx, res.Url)
+	} else {
+		xhttp.Ok(ctx, res)
+	}
 }
 
 // UploadWithSecret godoc

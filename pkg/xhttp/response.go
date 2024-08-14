@@ -39,3 +39,7 @@ func Internal(ctx *gin.Context, err error) {
 		},
 	})
 }
+
+func Redirect(ctx *gin.Context, url string) {
+	ctx.Redirect(STATUS_SEE_OTHER, url)
+}
