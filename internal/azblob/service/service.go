@@ -303,7 +303,7 @@ func (s *service) DownloadSAS(ctx context.Context, req *models.DownloadSASReques
 	}
 
 	now := time.Now().Add(-10 * time.Second)
-	expiry := now.Add(time.Duration(s.cfg.Download.Expire) * 24 * time.Hour)
+	expiry := now.Add(time.Duration(s.cfg.Download.Expire) * time.Minute)
 	permissions := sas.BlobPermissions{Read: true}
 
 	sasURL, err := blobCli.GetSASURL(permissions, expiry, nil)
