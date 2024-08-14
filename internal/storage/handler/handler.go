@@ -190,6 +190,7 @@ func (h Handler) CommitChunk(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			file_id	path		string	true	"file id"
 //	@Param			token	query		string	true	"token"
+//	@Param			silent	query		bool	false	"silent response"
 //	@Success		200		{object}	models.DownloadResponse
 //	@Router			/storage/download/{file_id} [get]
 func (h Handler) Download(ctx *gin.Context) {
@@ -364,6 +365,7 @@ func (h Handler) CommitChunkWithSecret(ctx *gin.Context) {
 //	@Param			file_id	path		string	true	"file id"
 //	@Param			token	query		string	true	"token"
 //	@Param			secret	query		string	true	"secret"
+//	@Param			silent	query		bool	false	"silent response"
 //	@Success		200		{object}	models.DownloadResponse
 //	@Router			/storage/secret/download/{file_id} [get]
 func (h Handler) DownloadWithSecret(ctx *gin.Context) {
@@ -371,6 +373,7 @@ func (h Handler) DownloadWithSecret(ctx *gin.Context) {
 	fileId := ctx.Param("file_id")
 	token := ctx.Query("token")
 	secret := ctx.Query("secret")
+	silent := ctx.Query("silent")
 	res, err := h.usecase.DownloadWithSecret(ctx, userId, &models.DownloadWithSecretRequest{
 		FileId: fileId,
 		Token:  token,
@@ -381,7 +384,11 @@ func (h Handler) DownloadWithSecret(ctx *gin.Context) {
 		return
 	}
 
-	xhttp.Ok(ctx, res)
+	if silent != "true" {
+		xhttp.Redirect(ctx, res.Url)
+	} else {
+		xhttp.Ok(ctx, res)
+	}
 }
 
 // CreateSecret godoc

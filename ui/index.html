@@ -536,41 +536,39 @@
 				$("#importSecretCollapse").collapse("hide");
 			});
 
-			$("#unlockSecretFileForm").submit(function (event) {
+			$("#unlockSecretFileForm").submit(async (event) => {
 				event.preventDefault();
 
-				var secret = $("#secretTokenInput").val().trim();
-				var fileId = $("#fileIdInput").val();
-				var token = $("#fileTokenInput").val();
+				let isError = false;
+				const secret = $("#secretTokenInput").val().trim();
+				const fileId = $("#fileIdInput").val();
+				const token = $("#fileTokenInput").val();
 
-				var isError = false;
-				$.ajax({
-					url: `/api/v1/storage/secret/download/${fileId}?token=${token}&secret=${secret}`,
-					type: "GET",
-					success: function (response) {
-						if (response.error) {
+				try {
+					const response = await $.ajax({
+						url: `/api/v1/storage/secret/download/${fileId}?token=${token}&secret=${secret}&silent=true`,
+						type: "GET",
+					});
+					if (response.success) {
+						window.open(response.data.url, "_blank");
+					} else {
+						if (response.error.message === "permission denied") {
+							showError("Permission denied.");
+						} else {
 							isError = true;
-							if (response.error.message === "permission denied") {
-								showError("Permission denied. Invalid secret token.");
-							} else {
-								showError(`${response.error.code}: ${response.error.message}`);
-							}
-							return;
+							throw `${response.error.code}: ${response.error.message}`;
 						}
-						var actualDownloadUrl = response.data.url;
-						window.open(actualDownloadUrl, "_blank");
-					},
-					error: function () {
-						showError("An error occurred while retrieving the download link.");
-					},
-				}).then(function () {
-					if (!isError) {
-						$("#secretTokenInput").val("");
-						$("#fileIdInput").val("");
-						$("#fileTokenInput").val("");
-						$("#unlockSecretFileModal").modal("hide");
 					}
-				});
+				} catch (error) {
+					showError("An error occurred while unlocking the file.");
+				}
+
+				if (!isError) {
+					$("#secretTokenInput").val("");
+					$("#fileIdInput").val("");
+					$("#fileTokenInput").val("");
+					$("#unlockSecretFileModal").modal("hide");
+				}
 			});
 
 			$("#resetButton").click(function () {
