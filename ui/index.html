@@ -647,9 +647,9 @@
 					: `<td></td>`;
 				const tdUploadAt = `<td>${uploadedAt}</td>`;
 				const tdHasSecret = `<td>${hasSecret ? "Yes" : "No"}</td>`;
-				const btnRefresh = `<button class="btn btn-info refresh-row-btn" data-toggle="tooltip" title="Refresh link"><i class="fas fa-sync-alt"></i></button>`;
-				const btnDelete = `<button class="btn btn-danger delete-row-btn" data-toggle="tooltip" title="Delete"><i class="fas fa-trash-alt"></i></button>`;
-				const btnSecret = `<button class="btn btn-warning secret-row-btn" data-toggle="tooltip" title="Unlock File"><i class="fas fa-key"></i></button>`;
+				const btnRefresh = `<button class="btn btn-info refresh-row-btn" title="Refresh link"><i class="fas fa-sync-alt"></i></button>`;
+				const btnDelete = `<button class="btn btn-danger delete-row-btn" title="Delete"><i class="fas fa-trash-alt"></i></button>`;
+				const btnSecret = `<button class="btn btn-warning secret-row-btn" title="Unlock File"><i class="fas fa-key"></i></button>`;
 				const actionButtons = hasSecret ? btnSecret : btnRefresh;
 
 				const row = `<tr>
@@ -888,9 +888,12 @@
 						if (!hasSecret) {
 							try {
 								const downloadResponse = await $.ajax({
-									url: apiDownloadUrl,
+									url: `${apiDownloadUrl}&silent=true`,
 									type: "GET",
 								});
+								if (downloadResponse.error) {
+									throw `${downloadResponse.error.code}: ${downloadResponse.error.message}`;
+								}
 								const actualDownloadUrl = downloadResponse.data.url;
 
 								// Save file info to local storage
@@ -956,9 +959,12 @@
 					if (!hasSecret) {
 						try {
 							const downloadResponse = await $.ajax({
-								url: apiDownloadUrl,
+								url: `${apiDownloadUrl}&silent=true`,
 								type: "GET",
 							});
+							if (downloadResponse.error) {
+								throw `${downloadResponse.error.code}: ${downloadResponse.error.message}`;
+							}
 							const actualDownloadUrl = downloadResponse.data.url;
 
 							// Save file info to local storage
@@ -1060,7 +1066,6 @@
 				loadSecretTokenFromLocalStorage();
 
 				handleDnDFileInput();
-				$('[data-toggle="tooltip"]').tooltip();
 			});
 		</script>
 	</body>
