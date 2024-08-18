@@ -340,7 +340,7 @@
 								</button>
 							</div>
 						</div>
-						<div class="mt-3">
+						<div id="sharePublicPassword" class="mt-3">
 							<label for="sharePublicPasswordText">Download Password:</label>
 							<div class="input-group">
 								<input type="text" class="form-control" id="sharePublicPasswordText" readonly />
@@ -566,6 +566,7 @@
 						$("#sharePublicFileModal").modal("show");
 						$("#sharePublicFileLabel").text(`Share "${truncateText(fileName, 25)}"`);
 						$("#sharePublicFileText").val(downloadApi);
+						$("#sharePublicPassword").show();
 						$("#sharePublicPasswordText").val(password);
 					} else {
 						throw `${response.error.code}: ${response.error.message}`;
@@ -715,6 +716,7 @@
 						const fileName = row.find("td:nth-child(3)").text();
 						$("#sharePublicFileLabel").text(`Share "${truncateText(fileName, 25)}"`);
 						$("#sharePublicFileText").val(downloadApi);
+						$("#sharePublicPassword").hide();
 						$("#sharePublicFileModal").modal("show");
 					});
 
