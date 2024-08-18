@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<link rel="icon" href="assets/favicon.ico" type="image/x-icon" />
+		<link rel="icon" href="https://raw.githubusercontent.com/vukyn/medioa/main/ui/assets/favicon.ico" type="image/x-icon" />
 		<title>Medioa - File Upload</title>
 
 		<!-- jQuery -->
@@ -340,6 +340,15 @@
 								</button>
 							</div>
 						</div>
+						<div class="mt-3">
+							<label for="sharePublicPasswordText">Download Password:</label>
+							<div class="input-group">
+								<input type="text" class="form-control" id="sharePublicPasswordText" readonly />
+								<button class="btn btn-outline-secondary" type="button" id="copySharePublicPasswordButton">
+									<i class="fas fa-copy"></i>
+								</button>
+							</div>
+						</div>
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -546,18 +555,20 @@
 
 				try {
 					const response = await $.ajax({
-						url: `/api/v1/storage/secret/download/${fileId}?token=${token}&secret=${secret}&silent=true`,
+						url: `/api/v1/storage/download/request/${fileId}?token=${token}&secret=${secret}`,
 						type: "GET",
 					});
 					if (response.success) {
-						window.open(response.data.url, "_blank");
+						downloadApi = response.data.url;
+						password = response.data.password;
+						fileName = response.data.file_name;
+						$("#unlockSecretFileModal").modal("hide");
+						$("#sharePublicFileModal").modal("show");
+						$("#sharePublicFileLabel").text(`Share "${truncateText(fileName, 25)}"`);
+						$("#sharePublicFileText").val(downloadApi);
+						$("#sharePublicPasswordText").val(password);
 					} else {
-						if (response.error.message === "permission denied") {
-							showError("Permission denied.");
-						} else {
-							isError = true;
-							throw `${response.error.code}: ${response.error.message}`;
-						}
+						throw `${response.error.code}: ${response.error.message}`;
 					}
 				} catch (error) {
 					showError("An error occurred while unlocking the file.");
@@ -593,6 +604,13 @@
 			$("#copySharePublicFileButton").click(function () {
 				var sharePublicFileText = $("#sharePublicFileText");
 				sharePublicFileText.select();
+				document.execCommand("copy");
+				showNotification("Link copied");
+			});
+
+			$("#copySharePublicPasswordButton").click(function () {
+				var sharePublicPasswordText = $("#sharePublicPasswordText");
+				sharePublicPasswordText.select();
 				document.execCommand("copy");
 				showNotification("Link copied");
 			});

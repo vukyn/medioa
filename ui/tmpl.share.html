@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" href="https://raw.githubusercontent.com/vukyn/medioa/main/ui/assets/favicon.ico" type="image/x-icon" />
+		<title>Medioa - Download "{{.file_name}}"</title>
+
+		<!-- jQuery -->
+		<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+		<!-- jQuery -->
+
+		<!-- Bootstrap -->
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+		<!-- Bootstrap -->
+
+		<!-- Toaster Notification -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.10.0/toastify.min.css" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.10.0/toastify.min.js"></script>
+		<!-- Toaster Notification -->
+	</head>
+	<body>
+		<div class="m-3">
+			<h2 title="{{.file_name}}">File Name: {{.file_name}}</h2>
+			<p title="{{.file_id}}">File ID: {{.file_id}}</p>
+			<p title="{{.file_size}}">File Size: {{.file_size_str}}</p>
+			<p>Need password: {{if .has_secret}} Yes {{else}} No {{end}}</p>
+
+			<button type="button" class="btn btn-primary" onclick="requestDownload()">Re-download</button>
+		</div>
+
+		<!-- password input modal -->
+		<div class="modal fade" id="passwordModal" tabindex="-1" role="dialog" aria-labelledby="passwordModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="passwordModalLabel">Enter Password</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<div class="form-group">
+							<label for="passwordInput">Password:</label>
+							<input type="password" class="form-control" id="passwordInput" placeholder="Enter password" />
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+						<button type="button" class="btn btn-primary" id="submitPasswordButton">Submit</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>
+			$(document).ready(() => {
+				requestDownload();
+			});
+
+			const requestDownload = () => {
+				const currentUrl = window.location.href;
+				const pathArray = window.location.pathname.split("/");
+				const fileId = pathArray[pathArray.length - 1];
+
+				// Extract query parameters
+				const urlParams = new URLSearchParams(window.location.search);
+				const token = urlParams.get("token");
+				const hasSecret = "{{.has_secret}}";
+				let password = urlParams.get("password");
+
+				if (!token) {
+					alert("Token is required to download the file.");
+					return;
+				}
+
+				if (hasSecret && !password) {
+					$("#passwordModal").modal("show");
+
+					$("#submitPasswordButton")
+						.off("click")
+						.on("click", () => {
+							password = $("#passwordInput").val();
+							if (password) {
+								$("#passwordModal").modal("hide");
+								downloadFile(fileId, token, password);
+								$("#passwordInput").val("");
+							} else {
+								showError("Password is required to unlock the file.");
+							}
+						});
+				} else {
+					downloadFile(fileId, token, password);
+				}
+			};
+
+			const downloadFile = async (fileId, token, password) => {
+				try {
+					url = password
+						? `/api/v1/storage/download/${fileId}?token=${token}&silent=true&password=${password}`
+						: `/api/v1/storage/download/${fileId}?token=${token}&silent=true`;
+					const response = await $.ajax({
+						url: url,
+						type: "GET",
+					});
+					if (response.success) {
+						window.open(response.data.url, "_blank");
+					} else {
+						if (response.error.message === "permission denied") {
+							showError("Permission denied to download the file.");
+							return;
+						} else {
+							isError = true;
+							throw `${response.error.code}: ${response.error.message}`;
+						}
+					}
+				} catch (error) {
+					showError("An error occurred while unlocking the file.");
+					return;
+				}
+			};
+
+			const showError = (message) => {
+				Toastify({
+					text: message,
+					duration: 3000,
+					close: true,
+					backgroundColor: "red",
+				}).showToast();
+			};
+
+			const showSuccess = (message) => {
+				Toastify({
+					text: message,
+					duration: 3000,
+					close: true,
+					backgroundColor: "green",
+				}).showToast();
+			};
+
+			const showNotification = (message) => {
+				Toastify({
+					text: message,
+					duration: 3000,
+					close: true,
+				}).showToast();
+			};
+		</script>
+	</body>
+</html>

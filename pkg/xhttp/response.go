@@ -43,3 +43,7 @@ func Internal(ctx *gin.Context, err error) {
 func Redirect(ctx *gin.Context, url string) {
 	ctx.Redirect(STATUS_SEE_OTHER, url)
 }
+
+func HTML(ctx *gin.Context, html string, data any) {
+	ctx.HTML(STATUS_OK, html, data)
+}

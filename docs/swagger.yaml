@@ -43,6 +43,15 @@ definitions:
       url:
         type: string
     type: object
+  medioa_internal_storage_models.RequestDownloadResponse:
+    properties:
+      file_name:
+        type: string
+      password:
+        type: string
+      url:
+        type: string
+    type: object
   medioa_internal_storage_models.ResetPinCodeRequest:
     properties:
       access_token:
@@ -95,11 +104,11 @@ info:
   title: Medioa API
   version: "1.0"
 paths:
-  /storage/download/{file_id}:
+  /share/download/{file_id}:
     get:
       consumes:
       - application/json
-      description: Download media file
+      description: Download media file (images, videos, etc.)
       parameters:
       - description: file id
         in: path
@@ -110,6 +119,42 @@ paths:
         in: query
         name: token
         required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/medioa_internal_storage_models.DownloadResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Download media (public/private)
+      tags:
+      - Share
+  /storage/download/{file_id}:
+    get:
+      consumes:
+      - application/json
+      description: Download media file (images, videos, etc.)
+      parameters:
+      - description: file id
+        in: path
+        name: file_id
+        required: true
+        type: string
+      - description: token
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: secret
+        in: query
+        name: secret
+        type: string
+      - description: password
+        in: query
+        name: password
         type: string
       - description: silent response
         in: query
@@ -124,7 +169,40 @@ paths:
             $ref: '#/definitions/medioa_internal_storage_models.DownloadResponse'
       security:
       - ApiKeyAuth: []
-      summary: Download media
+      summary: Download media (public/private)
+      tags:
+      - Storage
+  /storage/download/request/{file_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get download url for private media with download password
+      parameters:
+      - description: file id
+        in: path
+        name: file_id
+        required: true
+        type: string
+      - description: token
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: secret
+        in: query
+        name: secret
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/medioa_internal_storage_models.RequestDownloadResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Request download private media
       tags:
       - Storage
   /storage/secret:
@@ -149,43 +227,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create new secret
-      tags:
-      - Storage
-  /storage/secret/download/{file_id}:
-    get:
-      consumes:
-      - application/json
-      description: Download media file
-      parameters:
-      - description: file id
-        in: path
-        name: file_id
-        required: true
-        type: string
-      - description: token
-        in: query
-        name: token
-        required: true
-        type: string
-      - description: secret
-        in: query
-        name: secret
-        required: true
-        type: string
-      - description: silent response
-        in: query
-        name: silent
-        type: boolean
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/medioa_internal_storage_models.DownloadResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Download media with secret
       tags:
       - Storage
   /storage/secret/pin:
@@ -268,6 +309,39 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Upload media with secret
+      tags:
+      - Storage
+  /storage/secret/upload/commit:
+    post:
+      consumes:
+      - application/json
+      description: Commit all chunks to complete upload media file
+      parameters:
+      - description: session id
+        in: query
+        name: id
+        type: string
+      - description: secret
+        in: query
+        name: secret
+        required: true
+        type: string
+      - description: commit chunk request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/medioa_internal_storage_models.CommitChunkRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/medioa_internal_storage_models.CommitChunkResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Commit upload media chunk with secret
       tags:
       - Storage
   /storage/secret/upload/stage:
@@ -361,11 +435,6 @@ paths:
         in: query
         name: id
         type: string
-      - description: secret
-        in: query
-        name: secret
-        required: true
-        type: string
       - description: commit chunk request
         in: body
         name: body
@@ -381,7 +450,7 @@ paths:
             $ref: '#/definitions/medioa_internal_storage_models.CommitChunkResponse'
       security:
       - ApiKeyAuth: []
-      summary: Commit upload media chunk with secret
+      summary: Commit upload media chunk
       tags:
       - Storage
   /storage/upload/stage:

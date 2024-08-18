@@ -37,6 +37,7 @@ func (m *mongo) GetOne(ctx context.Context, queries map[string]interface{}) (*en
 	filter := make([]bson.E, 0)
 	uuid := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_UUID, "", true)
 	downloadUrl := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_DOWNLOAD_URL, "", true)
+	downloadPassword := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_DOWNLOAD_PASSWORD, "", true)
 	_type := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_TYPE, "", true)
 	token := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_TOKEN, "", true)
 	ext := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_EXT, "", true)
@@ -48,6 +49,9 @@ func (m *mongo) GetOne(ctx context.Context, queries map[string]interface{}) (*en
 	}
 	if downloadUrl != "" {
 		filter = append(filter, bson.E{Key: "download_url", Value: downloadUrl})
+	}
+	if downloadPassword != "" {
+		filter = append(filter, bson.E{Key: "download_password", Value: downloadPassword})
 	}
 	if _type != "" {
 		filter = append(filter, bson.E{Key: "type", Value: _type})

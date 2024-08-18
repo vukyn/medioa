@@ -10,7 +10,7 @@ type IHandler interface {
 	UploadChunk(ctx *gin.Context)
 	UploadWithSecret(ctx *gin.Context)
 	Download(ctx *gin.Context)
-	DownloadWithSecret(ctx *gin.Context)
+	RequestDownload(ctx *gin.Context)
 	CreateSecret(ctx *gin.Context)
 	RetrieveSecret(ctx *gin.Context)
 	ResetPinCode(ctx *gin.Context)

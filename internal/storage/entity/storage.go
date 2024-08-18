@@ -11,20 +11,21 @@ import (
 )
 
 type Storage struct {
-	Id          int64     `gorm:"primarykey;column:id" bson:"id"`
-	UUID        string    `gorm:"column:uuid" bson:"_id"`
-	DownloadUrl string    `gorm:"column:download_url" bson:"download_url"`
-	Type        string    `gorm:"column:type" bson:"type"`
-	Token       string    `gorm:"column:token;default:(-)" bson:"token"`
-	LifeTime    int64     `gorm:"column:life_time;default:(-)" bson:"life_time"`
-	FileName    string    `gorm:"column:file_name" bson:"file_name"`
-	FileSize    int64     `gorm:"column:file_size" bson:"file_size"`
-	Ext         string    `gorm:"column:ext" bson:"ext"`
-	SecretId    string    `gorm:"column:secret_id" bson:"secret_id"`
-	CreatedBy   int64     `gorm:"column:created_by" bson:"created_by"`
-	CreatedAt   time.Time `gorm:"autoCreateTime" bson:"created_at"`
-	ChunkIds    *[]string `gorm:"column:chunk_ids" bson:"chunk_ids"`
-	TotalChunks int64     `gorm:"column:total_chunks" bson:"total_chunks"`
+	Id               int64     `gorm:"primarykey;column:id" bson:"id"`
+	UUID             string    `gorm:"column:uuid" bson:"_id"`
+	DownloadUrl      string    `gorm:"column:download_url" bson:"download_url"`
+	DownloadPassword string    `gorm:"column:download_password" bson:"download_password"`
+	Type             string    `gorm:"column:type" bson:"type"`
+	Token            string    `gorm:"column:token;default:(-)" bson:"token"`
+	LifeTime         int64     `gorm:"column:life_time;default:(-)" bson:"life_time"`
+	FileName         string    `gorm:"column:file_name" bson:"file_name"`
+	FileSize         int64     `gorm:"column:file_size" bson:"file_size"`
+	Ext              string    `gorm:"column:ext" bson:"ext"`
+	SecretId         string    `gorm:"column:secret_id" bson:"secret_id"`
+	CreatedBy        int64     `gorm:"column:created_by" bson:"created_by"`
+	CreatedAt        time.Time `gorm:"autoCreateTime" bson:"created_at"`
+	ChunkIds         *[]string `gorm:"column:chunk_ids" bson:"chunk_ids"`
+	TotalChunks      int64     `gorm:"column:total_chunks" bson:"total_chunks"`
 }
 
 func (s *Storage) TableName() string {
@@ -38,20 +39,21 @@ func (e *Storage) Export() *models.Response {
 	}
 
 	return &models.Response{
-		Id:          e.Id,
-		UUID:        e.UUID,
-		DownloadUrl: e.DownloadUrl,
-		Type:        e.Type,
-		Token:       e.Token,
-		LifeTime:    e.LifeTime,
-		FileName:    e.FileName,
-		FileSize:    e.FileSize,
-		Ext:         e.Ext,
-		SecretId:    e.SecretId,
-		CreatedBy:   e.CreatedBy,
-		CreatedAt:   e.CreatedAt,
-		ChunkIds:    chunkIds,
-		TotalChunks: e.TotalChunks,
+		Id:               e.Id,
+		UUID:             e.UUID,
+		DownloadUrl:      e.DownloadUrl,
+		DownloadPassword: e.DownloadPassword,
+		Type:             e.Type,
+		Token:            e.Token,
+		LifeTime:         e.LifeTime,
+		FileName:         e.FileName,
+		FileSize:         e.FileSize,
+		Ext:              e.Ext,
+		SecretId:         e.SecretId,
+		CreatedBy:        e.CreatedBy,
+		CreatedAt:        e.CreatedAt,
+		ChunkIds:         chunkIds,
+		TotalChunks:      e.TotalChunks,
 	}
 }
 
@@ -68,6 +70,7 @@ func (e *Storage) ParseFromSaveRequest(req *models.SaveRequest) {
 		e.Id = req.Id
 		e.UUID = req.UUID
 		e.DownloadUrl = req.DownloadUrl
+		e.DownloadPassword = req.DownloadPassword
 		e.Type = req.Type
 		e.Token = req.Token
 		e.LifeTime = req.LifeTime
@@ -122,6 +125,9 @@ func (e *Storage) ToBson() bson.D {
 	}
 	if e.DownloadUrl != "" {
 		d = append(d, bson.E{Key: "download_url", Value: e.DownloadUrl})
+	}
+	if e.DownloadPassword != "" {
+		d = append(d, bson.E{Key: "download_password", Value: e.DownloadPassword})
 	}
 	if e.Type != "" {
 		d = append(d, bson.E{Key: "type", Value: e.Type})

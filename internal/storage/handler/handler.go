@@ -33,11 +33,11 @@ func (h Handler) MapRoutes(group *gin.RouterGroup) {
 	group.POST(constants.STORAGE_ENDPOINT_UPLOAD, h.Upload)
 	group.POST(constants.STORAGE_ENDPOINT_UPLOAD_STAGE, h.UploadChunk)
 	group.POST(constants.STORAGE_ENDPOINT_UPLOAD_COMMIT, h.CommitChunk)
-	group.GET(constants.STORAGE_ENDPOINT_DOWNLOAD, h.Download)
 	group.POST(constants.STORAGE_ENDPOINT_UPLOAD_WITH_SECRET, h.UploadWithSecret)
 	group.POST(constants.STORAGE_ENDPOINT_UPLOAD_STAGE_WITH_SECRET, h.UploadChunkWithSecret)
 	group.POST(constants.STORAGE_ENDPOINT_UPLOAD_COMMIT_WITH_SECRET, h.CommitChunkWithSecret)
-	group.GET(constants.STORAGE_ENDPOINT_DOWNLOAD_WITH_SECRET, h.DownloadWithSecret)
+	group.GET(constants.STORAGE_ENDPOINT_DOWNLOAD, h.Download)
+	group.GET(constants.STORAGE_ENDPOINT_REQUEST_DOWNLOAD, h.RequestDownload)
 	group.POST(constants.STORAGE_ENDPOINT_CREATE_SECRET, h.CreateSecret)
 	group.PUT(constants.STORAGE_ENDPOINT_RETRIEVE_SECRET, h.RetrieveSecret)
 	group.PUT(constants.STORAGE_ENDPOINT_RESET_PIN_CODE, h.ResetPinCode)
@@ -180,40 +180,6 @@ func (h Handler) CommitChunk(ctx *gin.Context) {
 	xhttp.Created(ctx, res)
 }
 
-// Download godoc
-//
-//	@Security		ApiKeyAuth
-//	@Summary		Download media
-//	@Description	Download media file
-//	@Tags			Storage
-//	@Accept			json
-//	@Produce		json
-//	@Param			file_id	path		string	true	"file id"
-//	@Param			token	query		string	true	"token"
-//	@Param			silent	query		bool	false	"silent response"
-//	@Success		200		{object}	models.DownloadResponse
-//	@Router			/storage/download/{file_id} [get]
-func (h Handler) Download(ctx *gin.Context) {
-	userId := int64(1)
-	fileId := ctx.Param("file_id")
-	token := ctx.Query("token")
-	silent := ctx.Query("silent")
-	res, err := h.usecase.Download(ctx, userId, &models.DownloadRequest{
-		FileId: fileId,
-		Token:  token,
-	})
-	if err != nil {
-		xhttp.BadRequest(ctx, err)
-		return
-	}
-
-	if silent != "true" {
-		xhttp.Redirect(ctx, res.Url)
-	} else {
-		xhttp.Ok(ctx, res)
-	}
-}
-
 // UploadWithSecret godoc
 //
 //	@Security		ApiKeyAuth
@@ -332,7 +298,7 @@ func (h Handler) UploadChunkWithSecret(ctx *gin.Context) {
 //	@Param			secret	query		string						true	"secret"
 //	@Param			body	body		models.CommitChunkRequest	true	"commit chunk request"
 //	@Success		200		{object}	models.CommitChunkResponse
-//	@Router			/storage/upload/commit [post]
+//	@Router			/storage/secret/upload/commit [post]
 func (h Handler) CommitChunkWithSecret(ctx *gin.Context) {
 	id := ctx.Query("id")
 	secret := ctx.Query("secret")
@@ -354,30 +320,64 @@ func (h Handler) CommitChunkWithSecret(ctx *gin.Context) {
 	xhttp.Created(ctx, res)
 }
 
-// DownloadWithSecret godoc
+// RequestDownload godoc
 //
 //	@Security		ApiKeyAuth
-//	@Summary		Download media with secret
-//	@Description	Download media file
+//	@Summary		Request download private media
+//	@Description	Get download url for private media with download password
 //	@Tags			Storage
 //	@Accept			json
 //	@Produce		json
 //	@Param			file_id	path		string	true	"file id"
 //	@Param			token	query		string	true	"token"
 //	@Param			secret	query		string	true	"secret"
-//	@Param			silent	query		bool	false	"silent response"
-//	@Success		200		{object}	models.DownloadResponse
-//	@Router			/storage/secret/download/{file_id} [get]
-func (h Handler) DownloadWithSecret(ctx *gin.Context) {
+//	@Success		200		{object}	models.RequestDownloadResponse
+//	@Router			/storage/download/request/{file_id} [get]
+func (h Handler) RequestDownload(ctx *gin.Context) {
 	userId := int64(1)
 	fileId := ctx.Param("file_id")
 	token := ctx.Query("token")
 	secret := ctx.Query("secret")
-	silent := ctx.Query("silent")
-	res, err := h.usecase.DownloadWithSecret(ctx, userId, &models.DownloadWithSecretRequest{
+	res, err := h.usecase.RequestDownload(ctx, userId, &models.RequestDownloadRequest{
 		FileId: fileId,
 		Token:  token,
 		Secret: secret,
+	})
+	if err != nil {
+		xhttp.BadRequest(ctx, err)
+		return
+	}
+
+	xhttp.Ok(ctx, res)
+}
+
+// Download godoc
+//
+//	@Security		ApiKeyAuth
+//	@Summary		Download media (public/private)
+//	@Description	Download media file (images, videos, etc.)
+//	@Tags			Storage
+//	@Accept			json
+//	@Produce		json
+//	@Param			file_id		path		string	true	"file id"
+//	@Param			token		query		string	true	"token"
+//	@Param			secret		query		string	false	"secret"
+//	@Param			password	query		string	false	"password"
+//	@Param			silent		query		bool	false	"silent response"
+//	@Success		200			{object}	models.DownloadResponse
+//	@Router			/storage/download/{file_id} [get]
+func (h Handler) Download(ctx *gin.Context) {
+	userId := int64(1)
+	fileId := ctx.Param("file_id")
+	token := ctx.Query("token")
+	secret := ctx.Query("secret")
+	password := ctx.Query("password")
+	silent := ctx.Query("silent")
+	res, err := h.usecase.Download(ctx, userId, &models.DownloadRequest{
+		FileId:           fileId,
+		Token:            token,
+		Secret:           secret,
+		DownloadPassword: password,
 	})
 	if err != nil {
 		xhttp.BadRequest(ctx, err)

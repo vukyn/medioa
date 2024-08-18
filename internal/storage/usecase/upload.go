@@ -2,12 +2,9 @@ package usecase
 
 import (
 	"context"
-	"fmt"
-	"medioa/constants"
 	azBlobModel "medioa/internal/azblob/models"
 	storageModel "medioa/internal/storage/models"
 	"medioa/pkg/log"
-	"strings"
 
 	"github.com/google/uuid"
 )
@@ -34,8 +31,7 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *storageModel
 	// save to database
 	fileId := uuid.New().String()
 	fileName := map[bool]string{true: params.FileName, false: getUploadedFileName(params.File)}[params.FileName != ""]
-	filePath := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD, ":file_id", fileId)
-	downloadUrl := fmt.Sprintf("%s/api/v1%s?token=%s", u.cfg.App.Host, filePath, file.Token)
+	downloadUrl := getDownloadUrl(u.cfg.App.Host, fileId, file.Token)
 	if _, err := u.storageSv.Create(ctx, userId, &storageModel.SaveRequest{
 		UUID:        fileId,
 		Type:        mimeType,
@@ -88,8 +84,7 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *st
 	// Save to database
 	fileId := uuid.New().String()
 	fileName := map[bool]string{true: params.FileName, false: getUploadedFileName(params.File)}[params.FileName != ""]
-	filePath := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD_WITH_SECRET, ":file_id", fileId)
-	downloadUrl := fmt.Sprintf("%s/api/v1%s?token=%s", u.cfg.App.Host, filePath, file.Token)
+	downloadUrl := getDownloadUrl(u.cfg.App.Host, fileId, file.Token)
 	if _, err := u.storageSv.Create(ctx, userId, &storageModel.SaveRequest{
 		UUID:        fileId,
 		Type:        mimeType,
@@ -142,8 +137,7 @@ func (u *usecase) UploadChunk(ctx context.Context, userId int64, params *storage
 		// create new record
 		fileId = uuid.New().String()
 		fileName := map[bool]string{true: params.FileName, false: getUploadedFileName(params.Chunk)}[params.FileName != ""]
-		filePath := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD, ":file_id", fileId)
-		downloadUrl := fmt.Sprintf("%s/api/v1%s?token=%s", u.cfg.App.Host, filePath, file.Token)
+		downloadUrl := getDownloadUrl(u.cfg.App.Host, fileId, file.Token)
 		if _, err := u.storageSv.Create(ctx, userId, &storageModel.SaveRequest{
 			UUID:        fileId,
 			Type:        mimeType,
@@ -267,8 +261,7 @@ func (u *usecase) UploadChunkWithSecret(ctx context.Context, userId int64, param
 		// Create new record
 		fileId = uuid.New().String()
 		fileName := map[bool]string{true: params.FileName, false: getUploadedFileName(params.Chunk)}[params.FileName != ""]
-		filePath := strings.ReplaceAll(constants.STORAGE_ENDPOINT_DOWNLOAD, ":file_id", fileId)
-		downloadUrl := fmt.Sprintf("%s/api/v1%s?token=%s", u.cfg.App.Host, filePath, file.Token)
+		downloadUrl := getDownloadUrl(u.cfg.App.Host, fileId, file.Token)
 		if _, err := u.storageSv.Create(ctx, userId, &storageModel.SaveRequest{
 			UUID:        fileId,
 			Type:        mimeType,

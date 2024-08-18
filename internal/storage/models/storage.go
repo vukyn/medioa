@@ -5,6 +5,17 @@ import (
 	"medioa/pkg/xtype"
 )
 
+type GetFileInfoRequest struct {
+	FileId string `json:"file_id"`
+}
+
+type GetFileInfoResponse struct {
+	FileId    string `json:"file_id"`
+	FileName  string `json:"file_name"`
+	FileSize  int64  `json:"file_size"`
+	HasSecret bool   `json:"has_secret"`
+}
+
 type UploadFileRequest struct {
 	SessionId string     `json:"session_id"`
 	File      xtype.File `json:"file"`
@@ -105,14 +116,22 @@ type UploadResponse struct {
 }
 
 type DownloadRequest struct {
-	FileId string `json:"file_id"`
-	Token  string `json:"token"`
+	FileId           string `json:"file_id"`
+	Token            string `json:"token"`
+	Secret           string `json:"secret"`
+	DownloadPassword string `json:"download_password"`
 }
 
-type DownloadWithSecretRequest struct {
+type RequestDownloadRequest struct {
 	FileId string `json:"file_id"`
 	Secret string `json:"secret"`
 	Token  string `json:"token"`
+}
+
+type RequestDownloadResponse struct {
+	Url      string `json:"url"`
+	Password string `json:"password"`
+	FileName string `json:"file_name"`
 }
 
 type DownloadResponse struct {

@@ -71,7 +71,12 @@ func (s *Server) Start(ctx context.Context) {
 	// api v1
 	v1 := r.Group("/api/v1")
 	s.initHealthCheck(v1)
-	s.initHandler(v1)
+	s.initHandlerApi(v1)
+
+	// api share
+	share := r.Group("/share")
+	s.initHealthCheck(share)
+	s.initHandlerShare(share)
 
 	// socket
 	s.initSocket()

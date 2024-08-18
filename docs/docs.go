@@ -19,14 +19,14 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/storage/download/{file_id}": {
+        "/share/download/{file_id}": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Download media file",
+                "description": "Download media file (images, videos, etc.)",
                 "consumes": [
                     "application/json"
                 ],
@@ -34,9 +34,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Storage"
+                    "Share"
                 ],
-                "summary": "Download media",
+                "summary": "Download media (public/private)",
                 "parameters": [
                     {
                         "type": "string",
@@ -51,6 +51,113 @@ const docTemplate = `{
                         "name": "token",
                         "in": "query",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/medioa_internal_storage_models.DownloadResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/storage/download/request/{file_id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get download url for private media with download password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Storage"
+                ],
+                "summary": "Request download private media",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "file id",
+                        "name": "file_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "secret",
+                        "name": "secret",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/medioa_internal_storage_models.RequestDownloadResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/storage/download/{file_id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Download media file (images, videos, etc.)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Storage"
+                ],
+                "summary": "Download media (public/private)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "file id",
+                        "name": "file_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "secret",
+                        "name": "secret",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "password",
+                        "name": "password",
+                        "in": "query"
                     },
                     {
                         "type": "boolean",
@@ -103,63 +210,6 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/medioa_internal_storage_models.CreateSecretResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/storage/secret/download/{file_id}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Download media file",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Storage"
-                ],
-                "summary": "Download media with secret",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "file id",
-                        "name": "file_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "token",
-                        "name": "token",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "secret",
-                        "name": "secret",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "silent response",
-                        "name": "silent",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/medioa_internal_storage_models.DownloadResponse"
                         }
                     }
                 }
@@ -291,6 +341,58 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/medioa_internal_storage_models.UploadResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/storage/secret/upload/commit": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Commit all chunks to complete upload media file",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Storage"
+                ],
+                "summary": "Commit upload media chunk with secret",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session id",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "secret",
+                        "name": "secret",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "commit chunk request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/medioa_internal_storage_models.CommitChunkRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/medioa_internal_storage_models.CommitChunkResponse"
                         }
                     }
                 }
@@ -438,20 +540,13 @@ const docTemplate = `{
                 "tags": [
                     "Storage"
                 ],
-                "summary": "Commit upload media chunk with secret",
+                "summary": "Commit upload media chunk",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "session id",
                         "name": "id",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "secret",
-                        "name": "secret",
-                        "in": "query",
-                        "required": true
                     },
                     {
                         "description": "commit chunk request",
@@ -606,6 +701,20 @@ const docTemplate = `{
         "medioa_internal_storage_models.DownloadResponse": {
             "type": "object",
             "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "medioa_internal_storage_models.RequestDownloadResponse": {
+            "type": "object",
+            "properties": {
+                "file_name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
                 "url": {
                     "type": "string"
                 }

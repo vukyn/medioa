@@ -4,6 +4,7 @@ import (
 	"medioa/config"
 	initAzBlob "medioa/internal/azblob/init"
 	initSecret "medioa/internal/secret/init"
+	initShare "medioa/internal/share/init"
 	initStorage "medioa/internal/storage/init"
 	"medioa/pkg/log"
 	"net/http"
@@ -16,7 +17,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func (s *Server) initHandler(group *gin.RouterGroup) {
+func (s *Server) initHandlerApi(group *gin.RouterGroup) {
 	// Init azblob
 	azBlob := initAzBlob.NewInit(s.cfg, s.lib)
 
@@ -26,6 +27,21 @@ func (s *Server) initHandler(group *gin.RouterGroup) {
 	// Init storage
 	storage := initStorage.NewInit(s.cfg, s.lib, secret, azBlob)
 	storage.Handler.MapRoutes(group)
+}
+
+func (s *Server) initHandlerShare(group *gin.RouterGroup) {
+	// Init azblob
+	azBlob := initAzBlob.NewInit(s.cfg, s.lib)
+
+	// Init secret
+	secret := initSecret.NewInit(s.cfg, s.lib)
+
+	// Init storage
+	storage := initStorage.NewInit(s.cfg, s.lib, secret, azBlob)
+
+	// Init share
+	share := initShare.NewInit(s.cfg, s.lib, storage)
+	share.Handler.MapRoutes(group)
 }
 
 func (s *Server) initHealthCheck(group *gin.RouterGroup) {
@@ -48,7 +64,8 @@ func (s *Server) initSwagger() {
 
 func (s *Server) initStaticFiles() {
 	s.router.StaticFS("/index", http.Dir("ui"))
-	s.router.GET("/", func(ctx *gin.Context) { ctx.Redirect(http.StatusSeeOther, "/index") })
+	s.router.LoadHTMLGlob("ui/tmpl.*.html")
+	s.router.GET("/", func(ctx *gin.Context) { ctx.Redirect(http.StatusMovedPermanently, "/index/") })
 }
 
 func (s *Server) initSocket() {

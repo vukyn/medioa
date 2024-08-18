@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"medioa/constants"
 	"medioa/pkg/log"
 	"medioa/pkg/xtype"
 	"path"
@@ -11,8 +12,13 @@ import (
 	secretModel "medioa/internal/secret/models"
 	storageModel "medioa/internal/storage/models"
 
+	"github.com/vukyn/kuery/crypto"
 	"github.com/zRedShift/mimemagic"
 )
+
+func generateDownloadPassword() string {
+	return crypto.HashedToken()[0:8]
+}
 
 func sniffMimeType(file xtype.File) (string, error) {
 	log := log.New("usecase", "sniffMimeType")
@@ -41,6 +47,12 @@ func getUploadedFileName(file xtype.File) string {
 		fileName = file.Filename
 	}
 	return fileName
+}
+
+func getDownloadUrl(host, fileId, token string) string {
+	filePath := strings.ReplaceAll(constants.SHARE_ENDPOINT_DOWNLOAD, ":file_id", fileId)
+	downloadUrl := fmt.Sprintf("%s/share%s?token=%s", host, filePath, token)
+	return downloadUrl
 }
 
 func (u *usecase) verifySecretToken(ctx context.Context, secretToken string) (*secretModel.Response, error) {
