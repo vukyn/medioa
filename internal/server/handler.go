@@ -64,6 +64,7 @@ func (s *Server) initSwagger() {
 
 func (s *Server) initStaticFiles() {
 	s.router.StaticFS("/index", http.Dir("ui"))
+	s.router.StaticFS("/assets", http.Dir("ui/assets"))
 	s.router.LoadHTMLGlob("ui/tmpl.*.html")
 	s.router.GET("/", func(ctx *gin.Context) { ctx.Redirect(http.StatusMovedPermanently, "/index/") })
 }
