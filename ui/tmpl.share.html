@@ -48,7 +48,7 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-						<button type="button" class="btn btn-primary" id="submitPasswordButton">Submit</button>
+						<button type="button" class="btn btn-primary" id="submitPasswordButton">Download</button>
 					</div>
 				</div>
 			</div>
@@ -74,7 +74,7 @@
 					return;
 				}
 
-				if (hasSecret && !password) {
+				if (hasSecret === "true" && !password) {
 					$("#passwordModal").modal("show");
 
 					$("#submitPasswordButton")
