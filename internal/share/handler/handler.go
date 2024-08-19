@@ -8,6 +8,7 @@ import (
 	storageModel "medioa/internal/storage/models"
 	storageUC "medioa/internal/storage/usecase"
 	commonModel "medioa/models"
+	ratelimiter "medioa/pkg/middleware/rate_limiter"
 	"medioa/pkg/xhttp"
 
 	"github.com/dustin/go-humanize"
@@ -30,7 +31,7 @@ func InitHandler(cfg *config.Config, lib *commonModel.Lib, storage *initStorage.
 }
 
 func (h Handler) MapRoutes(group *gin.RouterGroup) {
-	group.GET(constants.SHARE_ENDPOINT_DOWNLOAD, h.Download)
+	group.GET(constants.SHARE_ENDPOINT_DOWNLOAD, ratelimiter.LimitPerSecond(constants.RATE_LIMIT_DOWNLOAD_PER_SECOND), h.Download)
 }
 
 // Download godoc
