@@ -1,6 +1,6 @@
 module medioa
 
-go 1.21.5
+go 1.23.1
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.12.0
