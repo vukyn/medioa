@@ -48,7 +48,7 @@ func (s *service) UploadPublicBlob(ctx context.Context, req *models.UploadBlobRe
 		log.Info("Wrote %d of %d bytes (%.2f%%)\n", bytesTransferred, totalBytes, percentage)
 		ws := s.lib.SocketConn.Get(req.SessionId)
 		if ws != nil {
-			ws.Write([]byte(fmt.Sprintf("%f", percentage)))
+			_ = ws.Write([]byte(fmt.Sprintf("%f", percentage)))
 		}
 	}
 
@@ -84,7 +84,7 @@ func (s *service) UploadPrivateBlob(ctx context.Context, req *models.UploadBlobR
 		log.Info("Wrote %d of %d bytes (%.2f%%)\n", bytesTransferred, totalBytes, percentage)
 		ws := s.lib.SocketConn.Get(req.SessionId)
 		if ws != nil {
-			ws.Write([]byte(fmt.Sprintf("%f", percentage)))
+			_ = ws.Write([]byte(fmt.Sprintf("%f", percentage)))
 		}
 	}
 
@@ -138,7 +138,7 @@ func (s *service) UploadPublicChunk(ctx context.Context, req *models.UploadChunk
 			percentage = 100
 		}
 		fmt.Println(percentage)
-		ws.Write([]byte(fmt.Sprintf("%f", percentage)))
+		_ = ws.Write([]byte(fmt.Sprintf("%f", percentage)))
 	}
 
 	return &models.UploadChunkResponse{
@@ -232,7 +232,7 @@ func (s *service) UploadPrivateChunk(ctx context.Context, req *models.UploadChun
 			percentage = 100
 		}
 		fmt.Println(percentage)
-		ws.Write([]byte(fmt.Sprintf("%f", percentage)))
+		_ = ws.Write([]byte(fmt.Sprintf("%f", percentage)))
 	}
 
 	return &models.UploadChunkResponse{

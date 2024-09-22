@@ -31,7 +31,10 @@ func main() {
 		panic(err)
 	}
 
-	log.Init(cfg.Log)
+	if err := log.Init(cfg.Log); err != nil {
+		panic(err)
+	}
+
 	server := server.New(ctx, cfg)
 	go func() {
 		server.Start(ctx)

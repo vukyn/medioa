@@ -68,7 +68,7 @@ func (e *Secret) ParseFromSaveRequest(req *models.SaveRequest) {
 
 func (e *Secret) ParseForCreate(req *models.SaveRequest, userId int64) {
 	e.ParseFromSaveRequest(req)
-	e.hashPassword()
+	_ = e.hashPassword()
 	e.CreatedBy = userId
 	e.CreatedAt = time.Now()
 }

@@ -21,6 +21,11 @@ DOCKER_COMPOSE_FILES := -f ./build/docker-compose.yml
 dev:
 	go run cmd/main.go
 
+lint:
+	go mod tidy
+	golangci-lint run
+	govulncheck ./...
+
 server:
 	@make server-build
 	@printf $(COLOR) "Starting server"

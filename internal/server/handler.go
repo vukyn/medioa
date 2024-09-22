@@ -76,7 +76,7 @@ func (s *Server) initSocket() {
 
 	router.GET("/ws/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		socket.HandleRequestWithKeys(c.Writer, c.Request, map[string]any{"id": id})
+		_ = socket.HandleRequestWithKeys(c.Writer, c.Request, map[string]any{"id": id})
 	})
 
 	router.GET("/ws/start", func(c *gin.Context) {
