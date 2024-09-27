@@ -83,7 +83,7 @@ fly-launch:
 
 fly-deploy:
 	@printf $(COLOR) "Deploying $(PROJECT_NAME) from fly.io"
-	fly deploy
+	flyctl deploy
 
 fly-secret:
 	@printf $(COLOR) "Setting secret $(KEY):$(VALUE) to fly.io"
