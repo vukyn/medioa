@@ -481,7 +481,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Upload media file (images, videos, etc.)",
+                "description": "Upload media file (images, videos, etc.), must provide file or url",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -500,11 +500,16 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "file url",
+                        "name": "url",
+                        "in": "formData"
+                    },
+                    {
                         "type": "file",
                         "description": "binary file",
                         "name": "file",
-                        "in": "formData",
-                        "required": true
+                        "in": "formData"
                     },
                     {
                         "type": "string",

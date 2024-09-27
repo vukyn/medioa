@@ -4,18 +4,24 @@ import (
 	"medioa/pkg/xtype"
 )
 
+type UploadResponse struct {
+	Url      string
+	Token    string
+	Ext      string
+	FileName string
+}
+
+type UploadURLRequest struct {
+	SecretId  string
+	URL       string
+}
+
 type UploadBlobRequest struct {
 	SessionId string
 	SecretId  string
 	File      xtype.File
 }
 
-type UploadBlobResponse struct {
-	Url      string
-	Token    string
-	Ext      string
-	FileName string
-}
 
 type UploadChunkRequest struct {
 	SessionId   string

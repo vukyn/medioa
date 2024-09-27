@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	azBlobModel "medioa/internal/azblob/models"
 	storageModel "medioa/internal/storage/models"
 	"medioa/pkg/log"
@@ -9,28 +10,60 @@ import (
 	"github.com/google/uuid"
 )
 
-func (u *usecase) Upload(ctx context.Context, userId int64, params *storageModel.UploadFileRequest) (*storageModel.UploadResponse, error) {
+func (u *usecase) Upload(ctx context.Context, userId int64, params *storageModel.UploadRequest) (*storageModel.UploadResponse, error) {
 	log := log.New("usecase", "Upload")
 
 	// validation
 
-	// sniff mime type
-	mimeType, err := sniffMimeType(params.File)
-	if err != nil {
-		return nil, err
+	var err error
+	var mimeType string
+	if params.File != nil {
+		// sniff mime type
+		mimeType, err = sniffMimeType(params.File)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// end validation
 
-	file, err := u.azBlobSv.UploadPublicBlob(ctx, params.ToBlobRequest())
-	if err != nil {
-		log.Error("usecase.azBlobSv.UploadPublicBlob", err)
-		return nil, err
+	var file *azBlobModel.UploadResponse
+	if params.URL != "" {
+		// upload from url
+		file, err = u.azBlobSv.UploadPublicURL(ctx, params.ToURLRequest())
+		if err != nil {
+			log.Error("usecase.azBlobSv.UploadPublicURL", err)
+			return nil, err
+		}
+	} else if params.File != nil {
+		// upload from file
+		file, err = u.azBlobSv.UploadPublicBlob(ctx, params.ToBlobRequest())
+		if err != nil {
+			log.Error("usecase.azBlobSv.UploadPublicBlob", err)
+			return nil, err
+		}
+	} else {
+		return nil, fmt.Errorf("invalid upload request")
+	}
+
+	var fileName string
+	if params.FileName != "" {
+		fileName = params.FileName
+	} else {
+		if params.File != nil {
+			fileName = getUploadedFileName1(params.File)
+		} else {
+			fileName = getUploadedFileName2(params.URL)
+		}
+	}
+
+	var fileSize int64
+	if params.File != nil {
+		fileSize = params.File.Size
 	}
 
 	// save to database
 	fileId := uuid.New().String()
-	fileName := map[bool]string{true: params.FileName, false: getUploadedFileName(params.File)}[params.FileName != ""]
 	downloadUrl := getDownloadUrl(u.cfg.App.Host, fileId, file.Token)
 	if _, err := u.storageSv.Create(ctx, userId, &storageModel.SaveRequest{
 		UUID:        fileId,
@@ -39,7 +72,7 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *storageModel
 		DownloadUrl: downloadUrl,
 		Ext:         file.Ext,
 		FileName:    fileName,
-		FileSize:    params.File.Size,
+		FileSize:    fileSize,
 	}); err != nil {
 		log.Error("usecase.storageSv.Create", err)
 		return nil, err
@@ -51,7 +84,7 @@ func (u *usecase) Upload(ctx context.Context, userId int64, params *storageModel
 		Token:    file.Token,
 		Ext:      file.Ext,
 		FileName: fileName,
-		FileSize: params.File.Size,
+		FileSize: fileSize,
 	}, nil
 }
 
@@ -83,7 +116,7 @@ func (u *usecase) UploadWithSecret(ctx context.Context, userId int64, params *st
 
 	// Save to database
 	fileId := uuid.New().String()
-	fileName := map[bool]string{true: params.FileName, false: getUploadedFileName(params.File)}[params.FileName != ""]
+	fileName := map[bool]string{true: params.FileName, false: getUploadedFileName1(params.File)}[params.FileName != ""]
 	downloadUrl := getDownloadUrl(u.cfg.App.Host, fileId, file.Token)
 	if _, err := u.storageSv.Create(ctx, userId, &storageModel.SaveRequest{
 		UUID:        fileId,
@@ -136,7 +169,7 @@ func (u *usecase) UploadChunk(ctx context.Context, userId int64, params *storage
 
 		// create new record
 		fileId = uuid.New().String()
-		fileName := map[bool]string{true: params.FileName, false: getUploadedFileName(params.Chunk)}[params.FileName != ""]
+		fileName := map[bool]string{true: params.FileName, false: getUploadedFileName1(params.Chunk)}[params.FileName != ""]
 		downloadUrl := getDownloadUrl(u.cfg.App.Host, fileId, file.Token)
 		if _, err := u.storageSv.Create(ctx, userId, &storageModel.SaveRequest{
 			UUID:        fileId,
@@ -260,7 +293,7 @@ func (u *usecase) UploadChunkWithSecret(ctx context.Context, userId int64, param
 
 		// Create new record
 		fileId = uuid.New().String()
-		fileName := map[bool]string{true: params.FileName, false: getUploadedFileName(params.Chunk)}[params.FileName != ""]
+		fileName := map[bool]string{true: params.FileName, false: getUploadedFileName1(params.Chunk)}[params.FileName != ""]
 		downloadUrl := getDownloadUrl(u.cfg.App.Host, fileId, file.Token)
 		if _, err := u.storageSv.Create(ctx, userId, &storageModel.SaveRequest{
 			UUID:        fileId,

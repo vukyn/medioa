@@ -47,12 +47,13 @@ func (h Handler) MapRoutes(group *gin.RouterGroup) {
 //
 //	@Security		ApiKeyAuth
 //	@Summary		Upload media
-//	@Description	Upload media file (images, videos, etc.)
+//	@Description	Upload media file (images, videos, etc.), must provide file or url
 //	@Tags			Storage
 //	@Accept			mpfd
 //	@Produce		json
 //	@Param			id			query		string	false	"session id"
-//	@Param			file		formData	file	true	"binary file"
+//	@Param			url			formData	string	false	"file url"
+//	@Param			file		formData	file	false	"binary file"
 //	@Param			file_name	formData	string	false	"file name"
 //	@Success		201			{object}	models.UploadResponse
 //	@Router			/storage/upload [post]
@@ -62,21 +63,33 @@ func (h Handler) Upload(ctx *gin.Context) {
 
 	id := ctx.Query("id")
 	fileName := ctx.PostForm("file_name")
+	url := ctx.PostForm("url")
 	file, err := ctx.FormFile("file")
 	if err != nil {
-		if err.Error() == "multipart: NextPart: http: request body too large" {
-			xhttp.BadRequest(ctx, fmt.Errorf("file size too large (max: %dMB)", maxSize))
-		} else {
-			xhttp.BadRequest(ctx, err)
+		if err.Error() != "http: no such file" {
+			if err.Error() == "multipart: NextPart: http: request body too large" {
+				xhttp.BadRequest(ctx, fmt.Errorf("file size too large (max: %dMB)", maxSize))
+			} else {
+				xhttp.BadRequest(ctx, err)
+			}
+			return
 		}
-		return
 	}
 	userId := int64(1)
-	res, err := h.usecase.Upload(ctx, userId, &models.UploadFileRequest{
+
+	req := &models.UploadRequest{
 		SessionId: id,
+		URL:       url,
 		File:      file,
 		FileName:  fileName,
-	})
+	}
+
+	if err := req.Validate(); err != nil {
+		xhttp.BadRequest(ctx, err)
+		return
+	}
+
+	res, err := h.usecase.Upload(ctx, userId, req)
 	if err != nil {
 		xhttp.BadRequest(ctx, err)
 		return

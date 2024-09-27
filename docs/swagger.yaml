@@ -398,16 +398,20 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: Upload media file (images, videos, etc.)
+      description: Upload media file (images, videos, etc.), must provide file or
+        url
       parameters:
       - description: session id
         in: query
         name: id
         type: string
+      - description: file url
+        in: formData
+        name: url
+        type: string
       - description: binary file
         in: formData
         name: file
-        required: true
         type: file
       - description: file name
         in: formData

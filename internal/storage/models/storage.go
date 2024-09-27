@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	azBlobModel "medioa/internal/azblob/models"
 	"medioa/pkg/xtype"
 )
@@ -16,13 +17,27 @@ type GetFileInfoResponse struct {
 	HasSecret bool   `json:"has_secret"`
 }
 
-type UploadFileRequest struct {
+type UploadRequest struct {
 	SessionId string     `json:"session_id"`
 	File      xtype.File `json:"file"`
+	URL       string     `json:"url"`
 	FileName  string     `json:"file_name"`
 }
 
-func (r *UploadFileRequest) ToBlobRequest() *azBlobModel.UploadBlobRequest {
+func (r *UploadRequest) Validate() error {
+	if r.File == nil && r.URL == "" {
+		return errors.New("file or url is required")
+	}
+	return nil
+}
+
+func (r *UploadRequest) ToURLRequest() *azBlobModel.UploadURLRequest {
+	return &azBlobModel.UploadURLRequest{
+		URL: r.URL,
+	}
+}
+
+func (r *UploadRequest) ToBlobRequest() *azBlobModel.UploadBlobRequest {
 	return &azBlobModel.UploadBlobRequest{
 		SessionId: r.SessionId,
 		File:      r.File,

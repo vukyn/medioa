@@ -10,6 +10,7 @@ import (
 	commonModel "medioa/models"
 	"medioa/pkg/log"
 	"medioa/pkg/xtype"
+	"net/url"
 	"path"
 	"time"
 
@@ -32,9 +33,37 @@ func InitService(cfg *config.Config, lib *commonModel.Lib) IService {
 	}
 }
 
+// Upload to public Blob Storage (handle concurrent chunks)
+// https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/storage/azblob/blockblob/examples_test.go
+func (s *service) UploadPublicURL(ctx context.Context, req *models.UploadURLRequest) (*models.UploadResponse, error) {
+	log := log.New("service", "UploadPublicURL")
+
+	// Parse the URL
+	url, err := url.Parse(req.URL)
+	if err != nil {
+		log.Error("url.Parse", err)
+		return nil, err
+	}
+
+	// init new block blob connection
+	token := crypto.HashedToken()
+	blobName := path.Join("public", token+path.Ext(path.Base(url.Path)))
+
+	if err := s.uploadURL(ctx, blobName, url); err != nil {
+		return nil, err
+	}
+
+	return &models.UploadResponse{
+		Token:    token,
+		FileName: blobName,
+		Ext:      path.Ext(url.Path),
+		Url:      path.Join(s.cfg.AzBlob.Host, s.cfg.Storage.Container, blobName),
+	}, nil
+}
+
 // Upload to public Blob Storage with process (handle concurrent chunks)
 // https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/storage/azblob/blockblob/examples_test.go
-func (s *service) UploadPublicBlob(ctx context.Context, req *models.UploadBlobRequest) (*models.UploadBlobResponse, error) {
+func (s *service) UploadPublicBlob(ctx context.Context, req *models.UploadBlobRequest) (*models.UploadResponse, error) {
 	log := log.New("service", "UploadPublicBlob")
 
 	// init new block blob connection
@@ -56,7 +85,7 @@ func (s *service) UploadPublicBlob(ctx context.Context, req *models.UploadBlobRe
 		return nil, err
 	}
 
-	return &models.UploadBlobResponse{
+	return &models.UploadResponse{
 		Token:    token,
 		FileName: blobName,
 		Ext:      path.Ext(req.File.Filename),
@@ -66,7 +95,7 @@ func (s *service) UploadPublicBlob(ctx context.Context, req *models.UploadBlobRe
 
 // Upload to private Blob Storage with process (handle concurrent chunks)
 // https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/storage/azblob/blockblob/examples_test.go
-func (s *service) UploadPrivateBlob(ctx context.Context, req *models.UploadBlobRequest) (*models.UploadBlobResponse, error) {
+func (s *service) UploadPrivateBlob(ctx context.Context, req *models.UploadBlobRequest) (*models.UploadResponse, error) {
 	log := log.New("service", "UploadPrivateBlob")
 
 	if req.SecretId == "" {
@@ -93,7 +122,7 @@ func (s *service) UploadPrivateBlob(ctx context.Context, req *models.UploadBlobR
 		return nil, err
 	}
 
-	return &models.UploadBlobResponse{
+	return &models.UploadResponse{
 		Token:    token,
 		FileName: blobName,
 		Ext:      path.Ext(req.File.Filename),
@@ -316,6 +345,21 @@ func (s *service) DownloadSAS(ctx context.Context, req *models.DownloadSASReques
 	return &models.DownloadSASResponse{
 		Url: sasURL,
 	}, nil
+}
+
+func (s *service) uploadURL(ctx context.Context, blobName string, url *url.URL) error {
+	log := log.New("service", "uploadURL")
+
+	opts := &blockblob.UploadBlobFromURLOptions{
+		// Metadata: map[string]*string{},
+	}
+	blobClient := s.lib.Blob.Container.NewBlockBlobClient(blobName)
+	if _, err := blobClient.UploadBlobFromURL(ctx, url.String(), opts); err != nil {
+		log.Error("blobClient.UploadBlobFromURL", err)
+		return err
+	}
+
+	return nil
 }
 
 func (s *service) uploadBlob(ctx context.Context, blobName string, file xtype.File, pr func(bytesTransferred int64)) error {

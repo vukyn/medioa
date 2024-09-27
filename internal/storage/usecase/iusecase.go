@@ -7,7 +7,7 @@ import (
 
 type IUsecase interface {
 	GetFileInfo(ctx context.Context, userId int64, params *models.GetFileInfoRequest) (*models.GetFileInfoResponse, error)
-	Upload(ctx context.Context, userId int64, params *models.UploadFileRequest) (*models.UploadResponse, error)
+	Upload(ctx context.Context, userId int64, params *models.UploadRequest) (*models.UploadResponse, error)
 	UploadChunk(ctx context.Context, userId int64, params *models.UploadChunkRequest) (*models.UploadChunkResponse, error)
 	CommitChunk(ctx context.Context, userId int64, params *models.CommitChunkRequest) (*models.CommitChunkResponse, error)
 	UploadWithSecret(ctx context.Context, userId int64, params *models.UploadWithSecretRequest) (*models.UploadResponse, error)

@@ -6,6 +6,7 @@ import (
 	"medioa/constants"
 	"medioa/pkg/log"
 	"medioa/pkg/xtype"
+	"net/url"
 	"path"
 	"strings"
 
@@ -39,12 +40,29 @@ func sniffMimeType(file xtype.File) (string, error) {
 	return mimeType.MediaType(), nil
 }
 
-func getUploadedFileName(file xtype.File) string {
+func getUploadedFileName1(file xtype.File) string {
 	var fileName string
 	ext := path.Ext(file.Filename)
 	fileName = strings.ReplaceAll(file.Filename, ext, "")
 	if fileName == "" {
 		fileName = file.Filename
+	}
+	return fileName
+}
+
+func getUploadedFileName2(URL string) string {
+	var fileName string
+
+	url, err := url.Parse(URL)
+	if err != nil {
+		return ""
+	}
+
+	fileName = path.Base(url.Path)
+	ext := path.Ext(fileName)
+	fileName = strings.ReplaceAll(fileName, ext, "")
+	if fileName == "" {
+		fileName = path.Base(url.Path)
 	}
 	return fileName
 }
