@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"medioa/config"
 	"medioa/constants"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 
@@ -59,20 +60,25 @@ func (h Handler) MapRoutes(group *gin.RouterGroup) {
 //	@Router			/storage/upload [post]
 func (h Handler) Upload(ctx *gin.Context) {
 	maxSize := h.cfg.Upload.MaxSizeMB
+	contentType := ctx.GetHeader("Content-Type")
 	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, maxSize<<20)
 
 	id := ctx.Query("id")
 	fileName := ctx.PostForm("file_name")
 	url := ctx.PostForm("url")
-	file, err := ctx.FormFile("file")
-	if err != nil {
-		if err.Error() != "http: no such file" {
-			if err.Error() == "multipart: NextPart: http: request body too large" {
-				xhttp.BadRequest(ctx, fmt.Errorf("file size too large (max: %dMB)", maxSize))
-			} else {
-				xhttp.BadRequest(ctx, err)
+	var file *multipart.FileHeader
+	if contentType == "multipart/form-data" {
+		var err error
+		file, err = ctx.FormFile("file")
+		if err != nil {
+			if err.Error() != "http: no such file" {
+				if err.Error() == "multipart: NextPart: http: request body too large" {
+					xhttp.BadRequest(ctx, fmt.Errorf("file size too large (max: %dMB)", maxSize))
+				} else {
+					xhttp.BadRequest(ctx, err)
+				}
+				return
 			}
-			return
 		}
 	}
 	userId := int64(1)
