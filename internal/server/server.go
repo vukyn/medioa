@@ -6,8 +6,10 @@ import (
 	"io"
 	"medioa/config"
 	"medioa/models"
-	"medioa/pkg/log"
-	"medioa/pkg/network"
+
+	"github.com/vukyn/kuery/network"
+
+	"github.com/vukyn/kuery/log"
 
 	_ "medioa/docs"
 
@@ -86,7 +88,7 @@ func (s *Server) Start(ctx context.Context) {
 
 	go func() {
 		if err := s.router.Run(port); err != nil {
-			log.Fatal("router.Run error: %s\n", err)
+			log.Panic("router.Run error: %s\n", err)
 		}
 	}()
 }
@@ -134,7 +136,7 @@ func initMongo(ctx context.Context, cfg *config.Config) (*mongo.Client, error) {
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		ip, _ := network.GetPublicIP()
+		ip, _ := network.GetOutboundIP()
 		log.Error(fmt.Sprintf("[%s], client.Ping", ip), err)
 		return nil, err
 	}

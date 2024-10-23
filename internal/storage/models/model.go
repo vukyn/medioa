@@ -32,13 +32,13 @@ func (r *RequestParams) trimSpace() {
 	r.Ext = strings.TrimSpace(r.Ext)
 	r.SecretId = strings.TrimSpace(r.SecretId)
 }
-func (r *RequestParams) ToMap() map[string]interface{} {
+func (r *RequestParams) ToMap() map[string]any {
 	r.trimSpace()
 
 	if strings.ToLower(r.OrderBy) != constants.SORT_ORDER_ASC {
 		r.OrderBy = constants.SORT_ORDER_DESC
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		constants.FIELD_STORAGE_ID:                r.Id,
 		constants.FIELD_STORAGE_UUID:              r.UUID,
 		constants.FIELD_STORAGE_DOWNLOAD_URL:      r.DownloadUrl,

@@ -5,7 +5,8 @@ import (
 	"fmt"
 	azBlobModel "medioa/internal/azblob/models"
 	storageModel "medioa/internal/storage/models"
-	"medioa/pkg/log"
+
+	"github.com/vukyn/kuery/log"
 
 	"github.com/google/uuid"
 )

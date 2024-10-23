@@ -13,8 +13,11 @@ import (
 	"medioa/internal/secret/models"
 	repo "medioa/internal/secret/repository"
 	commonModel "medioa/models"
-	"medioa/pkg/log"
-	"medioa/pkg/routine"
+	"medioa/pkg/recover"
+
+	"github.com/vukyn/kuery/routine"
+
+	"github.com/vukyn/kuery/log"
 )
 
 type service struct {
@@ -69,11 +72,11 @@ func (s *service) GetListPaging(ctx context.Context, params *models.RequestParam
 				errCh <- err
 			}
 			chRecords <- records
-		})
+		}, recover.RecoverPanic)
 	} else {
 		routine.Run(func() {
 			chRecords <- nil
-		})
+		}, recover.RecoverPanic)
 	}
 	if params.ConfigQuery == constants.CONFIG_QUERY_GET_ALL || params.ConfigQuery == constants.CONFIG_QUERY_GET_COUNT {
 		routine.Run(func() {
@@ -83,11 +86,11 @@ func (s *service) GetListPaging(ctx context.Context, params *models.RequestParam
 				errCh <- err
 			}
 			chCount <- count
-		})
+		}, recover.RecoverPanic)
 	} else {
 		routine.Run(func() {
 			chCount <- 0
-		})
+		}, recover.RecoverPanic)
 	}
 	count := <-chCount
 	records := <-chRecords

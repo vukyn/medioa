@@ -6,8 +6,9 @@ import (
 	initSecret "medioa/internal/secret/init"
 	initShare "medioa/internal/share/init"
 	initStorage "medioa/internal/storage/init"
-	"medioa/pkg/log"
 	"net/http"
+
+	"github.com/vukyn/kuery/log"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"

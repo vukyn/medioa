@@ -8,17 +8,18 @@ import (
 	"medioa/config"
 	"medioa/internal/azblob/models"
 	commonModel "medioa/models"
-	"medioa/pkg/log"
 	"medioa/pkg/xtype"
 	"net/url"
 	"path"
 	"time"
 
+	"github.com/vukyn/kuery/log"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
-	"github.com/vukyn/kuery/crypto"
+	"github.com/vukyn/kuery/cryp"
 )
 
 type service struct {
@@ -46,7 +47,7 @@ func (s *service) UploadPublicURL(ctx context.Context, req *models.UploadURLRequ
 	}
 
 	// init new block blob connection
-	token := crypto.HashedToken()
+	token := cryp.HashUUID()
 	blobName := path.Join("public", token+path.Ext(path.Base(url.Path)))
 
 	if err := s.uploadURL(ctx, blobName, url); err != nil {
@@ -67,7 +68,7 @@ func (s *service) UploadPublicBlob(ctx context.Context, req *models.UploadBlobRe
 	log := log.New("service", "UploadPublicBlob")
 
 	// init new block blob connection
-	token := crypto.HashedToken()
+	token := cryp.HashUUID()
 	blobName := path.Join("public", token+path.Ext(req.File.Filename))
 
 	// create a request progress object to track the progress of the upload
@@ -103,7 +104,7 @@ func (s *service) UploadPrivateBlob(ctx context.Context, req *models.UploadBlobR
 	}
 
 	// init new block blob connection
-	token := crypto.HashedToken()
+	token := cryp.HashUUID()
 	blobName := path.Join("private", req.SecretId, token+path.Ext(req.File.Filename))
 
 	// create a request progress object to track the progress of the upload
@@ -138,7 +139,7 @@ func (s *service) UploadPublicChunk(ctx context.Context, req *models.UploadChunk
 	// init new block blob connection
 	token := req.Token
 	if token == "" {
-		token = crypto.HashedToken()
+		token = cryp.HashUUID()
 	}
 	blobName := path.Join("public", token+path.Ext(req.FileName))
 
@@ -232,7 +233,7 @@ func (s *service) UploadPrivateChunk(ctx context.Context, req *models.UploadChun
 	// init new block blob connection
 	token := req.Token
 	if token == "" {
-		token = crypto.HashedToken()
+		token = cryp.HashUUID()
 	}
 	blobName := path.Join("private", req.SecretId, token+path.Ext(req.FileName))
 

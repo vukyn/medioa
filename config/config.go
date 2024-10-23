@@ -2,13 +2,14 @@ package config
 
 import (
 	"fmt"
-	"medioa/pkg/log"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/vukyn/kuery/log"
+
 	"github.com/joho/godotenv"
-	"github.com/vukyn/kuery/crypto"
+	"github.com/vukyn/kuery/cryp"
 )
 
 const (
@@ -143,7 +144,7 @@ func parseAzAdConfig(cfg *Config) {
 func parseSecretConfig(cfg *Config) {
 	secretKey := os.Getenv("SECRET_KEY")
 	if secretKey != "" {
-		cfg.Secret.SecretKey = string(crypto.Md5Encrypt([]byte(secretKey)))
+		cfg.Secret.SecretKey = cryp.HashMD5(secretKey)
 	}
 }
 

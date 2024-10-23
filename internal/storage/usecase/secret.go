@@ -6,11 +6,12 @@ import (
 	"medioa/constants"
 	secretModel "medioa/internal/secret/models"
 	storageModel "medioa/internal/storage/models"
-	"medioa/pkg/log"
 	"regexp"
 
+	"github.com/vukyn/kuery/log"
+
 	"github.com/google/uuid"
-	"github.com/vukyn/kuery/crypto"
+	"github.com/vukyn/kuery/cryp"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -43,7 +44,7 @@ func (u *usecase) CreateSecret(ctx context.Context, userId int64, params *storag
 
 	// Save to database
 	_id := uuid.New().String()
-	accessToken := crypto.HashedToken()
+	accessToken := cryp.HashUUID()
 	if _, err := u.secretSv.Create(ctx, userId, &secretModel.SaveRequest{
 		UUID:        _id,
 		Username:    params.Username,
@@ -84,7 +85,7 @@ func (u *usecase) RetrieveSecret(ctx context.Context, userId int64, params *stor
 		return nil, fmt.Errorf("password is incorrect")
 	}
 
-	accessToken := crypto.HashedToken()
+	accessToken := cryp.HashUUID()
 	if _, err := u.secretSv.Update(ctx, userId, &secretModel.SaveRequest{
 		UUID:        foundSecret.UUID,
 		AccessToken: accessToken,

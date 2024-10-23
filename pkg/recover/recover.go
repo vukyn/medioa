@@ -1,18 +1,12 @@
-package routine
+package recover
 
 import (
 	"fmt"
-	"medioa/pkg/log"
+
+	"github.com/vukyn/kuery/log"
 )
 
-func Run(fn func()) {
-	go func() {
-		defer recoverPanic()
-		fn()
-	}()
-}
-
-func recoverPanic() {
+func RecoverPanic() {
 	log := log.New("routine", "recoverPanic")
 	if r := recover(); r != nil {
 		err, ok := r.(error)

@@ -14,7 +14,7 @@ import (
 	"medioa/internal/storage/entity"
 	commonModel "medioa/models"
 
-	"github.com/vukyn/kuery/conversion"
+	"github.com/vukyn/kuery/conv"
 	"gorm.io/gorm"
 )
 
@@ -77,7 +77,7 @@ func (r *repo) UpdateMany(ctx context.Context, objs []*entity.Storage) (int64, e
 	return int64(len(objs)), nil
 }
 
-func (r *repo) initQuery(ctx context.Context, queries map[string]interface{}) *gorm.DB {
+func (r *repo) initQuery(ctx context.Context, queries map[string]any) *gorm.DB {
 	obj := &entity.Storage{}
 	query := r.dbWithContext(ctx).Model(obj)
 	query = r.join(query, queries)
@@ -87,7 +87,7 @@ func (r *repo) initQuery(ctx context.Context, queries map[string]interface{}) *g
 	return query
 }
 
-func (r *repo) initSubQuery(ctx context.Context, queries map[string]interface{}) *gorm.DB {
+func (r *repo) initSubQuery(ctx context.Context, queries map[string]any) *gorm.DB {
 	obj := &entity.Storage{}
 	query := r.dbWithContext(ctx).Model(obj)
 	query = r.joinSub(query, queries)
@@ -97,34 +97,34 @@ func (r *repo) initSubQuery(ctx context.Context, queries map[string]interface{})
 	return query
 }
 
-func (r *repo) getListGorm(ctx context.Context, queries map[string]interface{}) *gorm.DB {
+func (r *repo) getListGorm(ctx context.Context, queries map[string]any) *gorm.DB {
 	query := r.initQuery(ctx, queries)
 	return query
 }
 
-func (r *repo) join(query *gorm.DB, queries map[string]interface{}) *gorm.DB {
+func (r *repo) join(query *gorm.DB, queries map[string]any) *gorm.DB {
 	return query
 }
 
-func (r *repo) joinSub(query *gorm.DB, queries map[string]interface{}) *gorm.DB {
+func (r *repo) joinSub(query *gorm.DB, queries map[string]any) *gorm.DB {
 	return query
 }
 
-func (r *repo) column(query *gorm.DB, queries map[string]interface{}) *gorm.DB {
+func (r *repo) column(query *gorm.DB, queries map[string]any) *gorm.DB {
 	query = query.Select(
 		"storage.*",
 	)
 	return query
 }
 
-func (r *repo) columnSub(query *gorm.DB, queries map[string]interface{}) *gorm.DB {
+func (r *repo) columnSub(query *gorm.DB, queries map[string]any) *gorm.DB {
 	query = query.Select(
 		"storage." + constants.FIELD_STORAGE_ID,
 	)
 	return query
 }
 
-func (r *repo) Count(ctx context.Context, queries map[string]interface{}) (int64, error) {
+func (r *repo) Count(ctx context.Context, queries map[string]any) (int64, error) {
 	var count int64
 	if err := r.initSubQuery(ctx, queries).Select("count(1)").Count(&count).Error; err != nil {
 		return 0, err
@@ -133,11 +133,11 @@ func (r *repo) Count(ctx context.Context, queries map[string]interface{}) (int64
 }
 
 func (r *repo) GetById(ctx context.Context, id int64) (*entity.Storage, error) {
-	queries := map[string]interface{}{constants.FIELD_STORAGE_ID: id}
+	queries := map[string]any{constants.FIELD_STORAGE_ID: id}
 	return r.GetOne(ctx, queries)
 }
 
-func (r *repo) GetOne(ctx context.Context, queries map[string]interface{}) (*entity.Storage, error) {
+func (r *repo) GetOne(ctx context.Context, queries map[string]any) (*entity.Storage, error) {
 	queries["size"] = int64(1)
 	queries["page"] = int64(1)
 	result, err := r.GetListPaging(ctx, queries)
@@ -150,7 +150,7 @@ func (r *repo) GetOne(ctx context.Context, queries map[string]interface{}) (*ent
 	return result[0], nil
 }
 
-func (r *repo) GetList(ctx context.Context, queries map[string]interface{}) ([]*entity.Storage, error) {
+func (r *repo) GetList(ctx context.Context, queries map[string]any) ([]*entity.Storage, error) {
 	objs := []*entity.Storage{}
 	query := r.getListGorm(ctx, queries)
 	if err := query.Scan(&objs).Error; err != nil {
@@ -159,11 +159,11 @@ func (r *repo) GetList(ctx context.Context, queries map[string]interface{}) ([]*
 	return objs, nil
 }
 
-func (r *repo) GetListPaging(ctx context.Context, queries map[string]interface{}) ([]*entity.Storage, error) {
+func (r *repo) GetListPaging(ctx context.Context, queries map[string]any) ([]*entity.Storage, error) {
 	objs := []*entity.Storage{}
 
-	page := conversion.ReadInterfaceV2(queries, constants.FIELD_PAGE, constants.DEFAULT_PAGE, true)
-	size := conversion.ReadInterfaceV2(queries, constants.FIELD_SIZE, constants.DEFAULT_SIZE, true)
+	page := conv.ReadInterface(queries, constants.FIELD_PAGE, constants.DEFAULT_PAGE)
+	size := conv.ReadInterface(queries, constants.FIELD_SIZE, constants.DEFAULT_SIZE)
 
 	subQuery := r.initSubQuery(ctx, queries)
 	subQuery = subQuery.Offset(int((page - 1) * size)).Limit(int(size))
@@ -183,13 +183,13 @@ func (r *repo) GetListPaging(ctx context.Context, queries map[string]interface{}
 	return objs, nil
 }
 
-func (r *repo) sort(query *gorm.DB, queries map[string]interface{}) *gorm.DB {
-	sortMultiple := conversion.ReadInterfaceV2(queries, constants.FIELD_SORT_MULTIPLE, "", true)
+func (r *repo) sort(query *gorm.DB, queries map[string]any) *gorm.DB {
+	sortMultiple := conv.ReadInterface(queries, constants.FIELD_SORT_MULTIPLE, "")
 	if sortMultiple != "" {
 		query = query.Order(sortMultiple)
 	} else {
-		sortBy := conversion.ReadInterfaceV2(queries, constants.FIELD_SORT_BY, "", true)
-		orderBy := conversion.ReadInterfaceV2(queries, constants.FIELD_ORDER_BY, constants.DEFAULT_SORT_ORDER, true)
+		sortBy := conv.ReadInterface(queries, constants.FIELD_SORT_BY, "")
+		orderBy := conv.ReadInterface(queries, constants.FIELD_ORDER_BY, constants.DEFAULT_SORT_ORDER)
 		switch sortBy {
 		case constants.FIELD_STORAGE_TYPE:
 			query = query.Order(r.tableName + "." + constants.FIELD_STORAGE_TYPE + " " + orderBy)
@@ -212,13 +212,13 @@ func (r *repo) sort(query *gorm.DB, queries map[string]interface{}) *gorm.DB {
 	return query
 }
 
-func (r *repo) filter(query *gorm.DB, queries map[string]interface{}) *gorm.DB {
-	id := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_ID, 0, true)
-	downloadUrl := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_DOWNLOAD_URL, "", true)
-	_type := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_TYPE, "", true)
-	token := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_TOKEN, "", true)
-	lifeTime := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_LIFE_TIME, 0, true)
-	createdBy := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_CREATED_BY, 0, true)
+func (r *repo) filter(query *gorm.DB, queries map[string]any) *gorm.DB {
+	id := conv.ReadInterface(queries, constants.FIELD_STORAGE_ID, 0)
+	downloadUrl := conv.ReadInterface(queries, constants.FIELD_STORAGE_DOWNLOAD_URL, "")
+	_type := conv.ReadInterface(queries, constants.FIELD_STORAGE_TYPE, "")
+	token := conv.ReadInterface(queries, constants.FIELD_STORAGE_TOKEN, "")
+	lifeTime := conv.ReadInterface(queries, constants.FIELD_STORAGE_LIFE_TIME, 0)
+	createdBy := conv.ReadInterface(queries, constants.FIELD_STORAGE_CREATED_BY, 0)
 
 	if id != 0 {
 		query = query.Where(r.tableName+"."+constants.FIELD_STORAGE_ID+" = ? ", id)

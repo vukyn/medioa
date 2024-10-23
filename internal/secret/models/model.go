@@ -31,13 +31,13 @@ func (r *RequestParams) trimSpace() {
 	r.AccessToken = strings.TrimSpace(r.AccessToken)
 	r.Type = strings.TrimSpace(r.Type)
 }
-func (r *RequestParams) ToMap() map[string]interface{} {
+func (r *RequestParams) ToMap() map[string]any {
 	r.trimSpace()
 
 	if strings.ToLower(r.OrderBy) != constants.SORT_ORDER_ASC {
 		r.OrderBy = constants.SORT_ORDER_DESC
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		constants.FIELD_SECRET_ID:           r.Id,
 		constants.FIELD_SECRET_UUID:         r.UUID,
 		constants.FIELD_SECRET_USERNAME:     r.Username,

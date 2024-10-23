@@ -6,8 +6,9 @@ import (
 	"medioa/internal/server"
 	"time"
 
-	"medioa/pkg/graceful"
-	"medioa/pkg/log"
+	"github.com/vukyn/kuery/graceful"
+
+	"github.com/vukyn/kuery/log"
 )
 
 //	@title			Medioa API

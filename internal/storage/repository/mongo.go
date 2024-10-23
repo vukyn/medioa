@@ -7,7 +7,7 @@ import (
 	"medioa/internal/storage/entity"
 	commonModel "medioa/models"
 
-	"github.com/vukyn/kuery/conversion"
+	"github.com/vukyn/kuery/conv"
 	"go.mongodb.org/mongo-driver/bson"
 	mongoo "go.mongodb.org/mongo-driver/mongo"
 )
@@ -33,16 +33,16 @@ func (m *mongo) withCollection() *mongoo.Collection {
 func (m *mongo) GetById(ctx context.Context, id int64) (*entity.Storage, error) {
 	return nil, nil
 }
-func (m *mongo) GetOne(ctx context.Context, queries map[string]interface{}) (*entity.Storage, error) {
+func (m *mongo) GetOne(ctx context.Context, queries map[string]any) (*entity.Storage, error) {
 	filter := make([]bson.E, 0)
-	uuid := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_UUID, "", true)
-	downloadUrl := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_DOWNLOAD_URL, "", true)
-	downloadPassword := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_DOWNLOAD_PASSWORD, "", true)
-	_type := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_TYPE, "", true)
-	token := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_TOKEN, "", true)
-	ext := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_EXT, "", true)
-	secretId := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_SECRET_ID, "", true)
-	lifeTime := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_LIFE_TIME, 0, true)
+	uuid := conv.ReadInterface(queries, constants.FIELD_STORAGE_UUID, "")
+	downloadUrl := conv.ReadInterface(queries, constants.FIELD_STORAGE_DOWNLOAD_URL, "")
+	downloadPassword := conv.ReadInterface(queries, constants.FIELD_STORAGE_DOWNLOAD_PASSWORD, "")
+	_type := conv.ReadInterface(queries, constants.FIELD_STORAGE_TYPE, "")
+	token := conv.ReadInterface(queries, constants.FIELD_STORAGE_TOKEN, "")
+	ext := conv.ReadInterface(queries, constants.FIELD_STORAGE_EXT, "")
+	secretId := conv.ReadInterface(queries, constants.FIELD_STORAGE_SECRET_ID, "")
+	lifeTime := conv.ReadInterface(queries, constants.FIELD_STORAGE_LIFE_TIME, 0)
 
 	if uuid != "" {
 		filter = append(filter, bson.E{Key: "_id", Value: uuid})
@@ -78,13 +78,13 @@ func (m *mongo) GetOne(ctx context.Context, queries map[string]interface{}) (*en
 	}
 	return &obj, nil
 }
-func (m *mongo) GetList(ctx context.Context, queries map[string]interface{}) ([]*entity.Storage, error) {
+func (m *mongo) GetList(ctx context.Context, queries map[string]any) ([]*entity.Storage, error) {
 	return nil, nil
 }
-func (m *mongo) GetListPaging(ctx context.Context, queries map[string]interface{}) ([]*entity.Storage, error) {
+func (m *mongo) GetListPaging(ctx context.Context, queries map[string]any) ([]*entity.Storage, error) {
 	return nil, nil
 }
-func (m *mongo) Count(ctx context.Context, queries map[string]interface{}) (int64, error) {
+func (m *mongo) Count(ctx context.Context, queries map[string]any) (int64, error) {
 	return 0, nil
 }
 func (m *mongo) Create(ctx context.Context, obj *entity.Storage) (*entity.Storage, error) {

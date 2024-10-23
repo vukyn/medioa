@@ -5,8 +5,9 @@ import (
 	"fmt"
 	azBlobModel "medioa/internal/azblob/models"
 	storageModel "medioa/internal/storage/models"
-	"medioa/pkg/log"
 	"path"
+
+	"github.com/vukyn/kuery/log"
 )
 
 func (u *usecase) Download(ctx context.Context, userId int64, params *storageModel.DownloadRequest) (*storageModel.DownloadResponse, error) {

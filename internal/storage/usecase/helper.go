@@ -4,21 +4,22 @@ import (
 	"context"
 	"fmt"
 	"medioa/constants"
-	"medioa/pkg/log"
 	"medioa/pkg/xtype"
 	"net/url"
 	"path"
 	"strings"
 
+	"github.com/vukyn/kuery/log"
+
 	secretModel "medioa/internal/secret/models"
 	storageModel "medioa/internal/storage/models"
 
-	"github.com/vukyn/kuery/crypto"
+	"github.com/vukyn/kuery/cryp"
 	"github.com/zRedShift/mimemagic"
 )
 
 func generateDownloadPassword() string {
-	return crypto.HashedToken()[0:8]
+	return cryp.HashUUID()[0:8]
 }
 
 func sniffMimeType(file xtype.File) (string, error) {

@@ -7,7 +7,7 @@ import (
 	"medioa/internal/secret/entity"
 	commonModel "medioa/models"
 
-	"github.com/vukyn/kuery/conversion"
+	"github.com/vukyn/kuery/conv"
 	"go.mongodb.org/mongo-driver/bson"
 	mongoo "go.mongodb.org/mongo-driver/mongo"
 )
@@ -33,12 +33,12 @@ func (m *mongo) withCollection() *mongoo.Collection {
 func (m *mongo) GetById(ctx context.Context, id int64) (*entity.Secret, error) {
 	return nil, nil
 }
-func (m *mongo) GetOne(ctx context.Context, queries map[string]interface{}) (*entity.Secret, error) {
+func (m *mongo) GetOne(ctx context.Context, queries map[string]any) (*entity.Secret, error) {
 	filter := make([]bson.E, 0)
-	uuid := conversion.ReadInterfaceV2(queries, constants.FIELD_STORAGE_UUID, "", true)
-	username := conversion.ReadInterfaceV2(queries, constants.FIELD_SECRET_USERNAME, "", true)
-	accessToken := conversion.ReadInterfaceV2(queries, constants.FIELD_SECRET_ACCESS_TOKEN, "", true)
-	_type := conversion.ReadInterfaceV2(queries, constants.FIELD_SECRET_TYPE, "", true)
+	uuid := conv.ReadInterface(queries, constants.FIELD_STORAGE_UUID, "")
+	username := conv.ReadInterface(queries, constants.FIELD_SECRET_USERNAME, "")
+	accessToken := conv.ReadInterface(queries, constants.FIELD_SECRET_ACCESS_TOKEN, "")
+	_type := conv.ReadInterface(queries, constants.FIELD_SECRET_TYPE, "")
 
 	if uuid != "" {
 		filter = append(filter, bson.E{Key: "_id", Value: uuid})
@@ -62,13 +62,13 @@ func (m *mongo) GetOne(ctx context.Context, queries map[string]interface{}) (*en
 	}
 	return &obj, nil
 }
-func (m *mongo) GetList(ctx context.Context, queries map[string]interface{}) ([]*entity.Secret, error) {
+func (m *mongo) GetList(ctx context.Context, queries map[string]any) ([]*entity.Secret, error) {
 	return nil, nil
 }
-func (m *mongo) GetListPaging(ctx context.Context, queries map[string]interface{}) ([]*entity.Secret, error) {
+func (m *mongo) GetListPaging(ctx context.Context, queries map[string]any) ([]*entity.Secret, error) {
 	return nil, nil
 }
-func (m *mongo) Count(ctx context.Context, queries map[string]interface{}) (int64, error) {
+func (m *mongo) Count(ctx context.Context, queries map[string]any) (int64, error) {
 	return 0, nil
 }
 func (m *mongo) Create(ctx context.Context, obj *entity.Secret) (*entity.Secret, error) {
