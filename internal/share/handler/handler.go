@@ -8,8 +8,9 @@ import (
 	storageModel "medioa/internal/storage/models"
 	storageUC "medioa/internal/storage/usecase"
 	commonModel "medioa/models"
-	ratelimiter "medioa/pkg/middleware/rate_limiter"
 	"medioa/pkg/xhttp"
+
+	ratelimiter "github.com/vukyn/kuery/middleware/gin/rate_limiter"
 
 	"github.com/dustin/go-humanize"
 
