@@ -418,7 +418,7 @@ paths:
         name: file_name
         type: string
       produces:
-      - application/json
+      - multipart/form-data
       responses:
         "201":
           description: Created

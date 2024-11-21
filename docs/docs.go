@@ -486,7 +486,7 @@ const docTemplate = `{
                     "multipart/form-data"
                 ],
                 "produces": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "tags": [
                     "Storage"

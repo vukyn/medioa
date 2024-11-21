@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"medioa/internal/storage/models"
 	"medioa/internal/storage/usecase"
@@ -51,7 +52,7 @@ func (h Handler) MapRoutes(group *gin.RouterGroup) {
 //	@Description	Upload media file (images, videos, etc.), must provide file or url
 //	@Tags			Storage
 //	@Accept			mpfd
-//	@Produce		json
+//	@Produce		multipart/form-data
 //	@Param			id			query		string	false	"session id"
 //	@Param			url			formData	string	false	"file url"
 //	@Param			file		formData	file	false	"binary file"
@@ -67,7 +68,7 @@ func (h Handler) Upload(ctx *gin.Context) {
 	fileName := ctx.PostForm("file_name")
 	url := ctx.PostForm("url")
 	var file *multipart.FileHeader
-	if contentType == "multipart/form-data" {
+	if strings.Contains(contentType, "multipart/form-data") {
 		var err error
 		file, err = ctx.FormFile("file")
 		if err != nil {
